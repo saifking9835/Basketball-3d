@@ -109,14 +109,18 @@
             letter-spacing: 1px;
             opacity: 0.9;
         }
+        
+        /* FIXED: SAFELY POSITIONED FROM BOTTOM */
         .made-by-saif {
             color: rgba(255, 255, 255, 0.4);
-            font-size: 12px;
+            font-size: 13px;
             letter-spacing: 4px;
             text-transform: uppercase;
             font-weight: bold;
             margin-top: auto;
+            margin-bottom: 40px; 
             text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            z-index: 105;
         }
 
         /* KEYFRAME ANIMATIONS FOR LOADER */
@@ -438,7 +442,6 @@
                 progress = 100;
                 clearInterval(interval);
                 setTimeout(() => {
-                    // Premium Blur + Fade transition
                     loadingOverlay.style.filter = "blur(10px)";
                     loadingOverlay.style.opacity = 0;
                     setTimeout(() => {
@@ -479,46 +482,32 @@
         if(sfxEnabled && gameRunning) playBeep(550, 'sine', 0.05);
     }
 
+    // ... (rest of game logic remains identical to keep code perfectly running)
     function startSmoothBGM() {
         if(bgmNode) return; 
         if(!musicEnabled) return;
-
         let bufferSize = audioCtx.sampleRate * 4; 
         let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
         let data = buffer.getChannelData(0);
-        
         for (let i = 0; i < bufferSize; i++) {
             let t = i / audioCtx.sampleRate;
             let note = Math.sin(2 * Math.PI * 130.81 * t) * 0.4; 
             if ((t % 0.5) < 0.12) note += Math.sin(2 * Math.PI * 261.63 * t) * 0.25; 
             data[i] = note * (1 - (i % (audioCtx.sampleRate / 2)) / (audioCtx.sampleRate / 2)); 
         }
-
         let source = audioCtx.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true;
-
+        source.buffer = buffer; source.loop = true;
         let gainNode = audioCtx.createGain();
         gainNode.gain.setValueAtTime((musicEnabled && gameRunning) ? 0.25 : 0, audioCtx.currentTime);
-        
-        source.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        source.start();
-        bgmNode = gainNode;
+        source.connect(gainNode); gainNode.connect(audioCtx.destination);
+        source.start(); bgmNode = gainNode;
     }
-
-    function stopBGM() {
-        if (bgmNode) {
-            bgmNode.gain.setValueAtTime(0, audioCtx.currentTime);
-        }
-    }
-
+    function stopBGM() { if (bgmNode) bgmNode.gain.setValueAtTime(0, audioCtx.currentTime); }
     function playBeep(freq, type, duration) {
         if (!sfxEnabled || !gameRunning) return;
         try {
             if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            let osc = audioCtx.createOscillator();
-            let gain = audioCtx.createGain();
+            let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
             osc.type = type; osc.frequency.value = freq;
             gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
@@ -526,7 +515,6 @@
             osc.start(); osc.stop(audioCtx.currentTime + duration);
         } catch(err){}
     }
-
     function resizeCanvas() {
         canvas.width = canvas.parentElement.clientWidth;
         canvas.height = canvas.parentElement.clientHeight;
@@ -534,185 +522,126 @@
     resizeCanvas();
 
     let ball, hoops, particles, score, gameRunning, gameLoopId;
-    let swishStreak = 0; 
-    let showCross = false, crossX = 0, crossY = 0;
+    let swishStreak = 0; let showCross = false, crossX = 0, crossY = 0;
 
     function handleSliderClick(e) {
         if(e) e.stopPropagation();
         const rect = document.querySelector('.slider-track').getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const pct = (clientX - rect.left) / rect.width;
-        
         if (pct < 0.33) currentModeIndex = 0;
         else if (pct < 0.66) currentModeIndex = 1;
         else currentModeIndex = 2;
-        
         updateMenuUI();
     }
 
     function updateMenuUI() {
         const m = modes[currentModeIndex];
-        menuModeTitle.innerText = m.name;
-        menuModeTitle.style.color = m.color;
-        sliderFill.style.width = m.fill;
-        sliderFill.style.backgroundColor = m.color;
-        sliderThumb.style.left = m.fill;
-        sliderThumb.style.borderColor = m.color;
-        playBtn.style.backgroundColor = m.color;
-        playBtn.style.boxShadow = `0 6px 0 ${m.box}`;
-
+        menuModeTitle.innerText = m.name; menuModeTitle.style.color = m.color;
+        sliderFill.style.width = m.fill; sliderFill.style.backgroundColor = m.color;
+        sliderThumb.style.left = m.fill; sliderThumb.style.borderColor = m.color;
+        playBtn.style.backgroundColor = m.color; playBtn.style.boxShadow = `0 6px 0 ${m.box}`;
         menuAvatar.className = "emoji-face";
         if(currentModeIndex === 0) {
-            menuAvatar.classList.add("easy-face");
-            avatarMouth.style.borderRadius = "0 0 10px 10px"; avatarMouth.style.height = "10px";
+            menuAvatar.classList.add("easy-face"); avatarMouth.style.borderRadius = "0 0 10px 10px"; avatarMouth.style.height = "10px";
         } else if(currentModeIndex === 1) {
-            menuAvatar.classList.add("medium-face");
-            avatarMouth.style.borderRadius = "0"; avatarMouth.style.height = "3px";
+            menuAvatar.classList.add("medium-face"); avatarMouth.style.borderRadius = "0"; avatarMouth.style.height = "3px";
         } else {
-            menuAvatar.classList.add("hard-face");
-            avatarMouth.style.borderRadius = "10px 10px 0 0"; avatarMouth.style.height = "8px";
+            menuAvatar.classList.add("hard-face"); avatarMouth.style.borderRadius = "10px 10px 0 0"; avatarMouth.style.height = "8px";
         }
         highScoreEl.innerText = localStorage.getItem(`fj_alltime_${m.name}`) || 0;
     }
 
     class Ball {
-        constructor() {
-            this.x = canvas.width * 0.25;
-            this.y = canvas.height / 2;
-            this.radius = 14;
-            this.velocity = 0;
-        }
+        constructor() { this.x = canvas.width * 0.25; this.y = canvas.height / 2; this.radius = 14; this.velocity = 0; }
         draw() {
-            ctx.fillStyle = "#ffffff"; ctx.strokeStyle = "#000000"; ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            let wingY = (this.velocity < 0) ? -5 : 2;
-            let angle = (this.velocity < 0) ? -Math.PI/6 : Math.PI/6;
+            ctx.fillStyle = "#ffffff"; ctx.strokeStyle = "#000000"; ctx.lineWidth = 2.5; ctx.beginPath();
+            let wingY = (this.velocity < 0) ? -5 : 2; let angle = (this.velocity < 0) ? -Math.PI/6 : Math.PI/6;
             ctx.ellipse(this.x - 16, this.y + wingY, 12, 6, angle, 0, Math.PI * 2);
             ctx.ellipse(this.x + 16, this.y + wingY, 12, 6, -angle, 0, Math.PI * 2);
             ctx.fill(); ctx.stroke();
-
-            ctx.fillStyle = "#e67e22"; ctx.beginPath();
-            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-            ctx.lineWidth = 1.5; ctx.beginPath();
-            ctx.arc(this.x, this.y, this.radius, -Math.PI/4, Math.PI * 0.75); ctx.stroke();
+            ctx.fillStyle = "#e67e22"; ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, -Math.PI/4, Math.PI * 0.75); ctx.stroke();
             ctx.beginPath(); ctx.moveTo(this.x - this.radius, this.y); ctx.lineTo(this.x + this.radius, this.y); ctx.stroke();
         }
         update() {
-            this.velocity += 0.45; 
-            this.y += this.velocity;
-            if (this.y + this.radius > canvas.height || this.y - this.radius < 0) {
-                triggerCross(canvas.width / 2, canvas.height / 2);
-            }
+            this.velocity += 0.45; this.y += this.velocity;
+            if (this.y + this.radius > canvas.height || this.y - this.radius < 0) triggerCross(canvas.width / 2, canvas.height / 2);
         }
-        flap() {
-            this.velocity = -7.5;
-            playBeep(330, 'sine', 0.05);
-        }
+        flap() { this.velocity = -7.5; playBeep(330, 'sine', 0.05); }
     }
 
     class Hoop {
         constructor() {
-            this.x = canvas.width + 60;
-            this.y = Math.random() * (canvas.height * 0.45) + (canvas.height * 0.22);
-            this.width = 90; this.height = 20; 
-            this.speed = modes[currentModeIndex].speed;
-            this.passed = false;
-            this.touchedRim = false;
+            this.x = canvas.width + 60; this.y = Math.random() * (canvas.height * 0.45) + (canvas.height * 0.22);
+            this.width = 90; this.height = 20; this.speed = modes[currentModeIndex].speed;
+            this.passed = false; this.touchedRim = false;
         }
         drawRim() {
-            ctx.lineWidth = 7; ctx.strokeStyle = "#002b47";
-            ctx.beginPath(); ctx.ellipse(this.x + this.width/2, this.y, this.width/2, this.height/2, 0, 0, Math.PI * 2); ctx.stroke();
-
+            ctx.lineWidth = 7; ctx.strokeStyle = "#002b47"; ctx.beginPath(); ctx.ellipse(this.x + this.width/2, this.y, this.width/2, this.height/2, 0, 0, Math.PI * 2); ctx.stroke();
             let grad = ctx.createLinearGradient(this.x, this.y - this.height/2, this.x, this.y + this.height/2);
             grad.addColorStop(0, "#00d2ff"); grad.addColorStop(1, "#0066ff");
-            ctx.fillStyle = grad; ctx.beginPath();
-            ctx.ellipse(this.x + this.width/2, this.y, this.width/2, this.height/2, 0, 0, Math.PI * 2); ctx.fill();
-
-            ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
-            ctx.beginPath(); ctx.ellipse(this.x + this.width/2, this.y - 2, this.width/2.2, this.height/4, 0, Math.PI, Math.PI * 2); ctx.stroke();
+            ctx.fillStyle = grad; ctx.beginPath(); ctx.ellipse(this.x + this.width/2, this.y, this.width/2, this.height/2, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255, 255, 255, 0.8)"; ctx.beginPath(); ctx.ellipse(this.x + this.width/2, this.y - 2, this.width/2.2, this.height/4, 0, Math.PI, Math.PI * 2); ctx.stroke();
         }
     }
 
     function createGoldenTrail(x, y) {
         for(let i=0; i<3; i++) {
             particles.push({
-                x: x + (Math.random() * 6 - 3), 
-                y: y + (Math.random() * 8 - 4),
-                size: Math.random() * 5 + 2,
-                alpha: 1, 
-                speedX: -(Math.random() * 2 + 1),
-                speedY: (Math.random() * 1 - 0.5)
+                x: x + (Math.random() * 6 - 3), y: y + (Math.random() * 8 - 4), size: Math.random() * 5 + 2,
+                alpha: 1, speedX: -(Math.random() * 2 + 1), speedY: (Math.random() * 1 - 0.5)
             });
         }
     }
 
     function launchGame() {
-        menuOverlay.style.display = 'none'; screenOverlay.style.display = 'none';
-        gameHUD.style.display = 'flex';
-        
-        showCross = false; swishStreak = 0;
-        ball = new Ball(); hoops = [new Hoop()]; particles = [];
+        menuOverlay.style.display = 'none'; screenOverlay.style.display = 'none'; gameHUD.style.display = 'flex';
+        showCross = false; swishStreak = 0; ball = new Ball(); hoops = [new Hoop()]; particles = [];
         score = 0; scoreEl.innerText = score;
-        
         document.getElementById('hudModeName').innerText = modes[currentModeIndex].name;
-        gameRunning = true;
-
-        initAudio(); 
+        gameRunning = true; initAudio(); 
         if(bgmNode && musicEnabled) bgmNode.gain.setValueAtTime(0.25, audioCtx.currentTime);
-
         if(gameLoopId) cancelAnimationFrame(gameLoopId);
         gameLoop();
     }
 
     function triggerCross(x, y) {
-        gameRunning = false; showCross = true; crossX = x; crossY = y;
-        
-        stopBGM();
+        gameRunning = false; showCross = true; crossX = x; crossY = y; stopBGM();
         try {
-            let osc = audioCtx.createOscillator();
-            let gain = audioCtx.createGain();
+            let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
             osc.type = 'sawtooth'; osc.frequency.value = 180;
             gain.gain.setValueAtTime(sfxEnabled ? 0.35 : 0, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.start(); osc.stop(audioCtx.currentTime + 0.4);
         } catch(e){}
-
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "#d1c9b0"; ctx.beginPath(); ctx.moveTo(0, canvas.height); ctx.lineTo(canvas.width * 0.5, canvas.height * 0.75); ctx.lineTo(canvas.width, canvas.height); ctx.fill();
-        hoops.forEach(h => h.drawRim());
-        ball.draw();
-
+        hoops.forEach(h => h.drawRim()); ball.draw();
         ctx.lineWidth = 15; ctx.strokeStyle = "rgba(75, 65, 65, 0.9)"; ctx.lineCap = "round";
         ctx.beginPath(); ctx.moveTo(x - 40, y - 40); ctx.lineTo(x + 40, y + 40); ctx.moveTo(x + 40, y - 40); ctx.lineTo(x - 40, y + 40); ctx.stroke();
-
         setTimeout(showGameOverCard, 1000);
     }
 
     function showGameOverCard() {
-        cancelAnimationFrame(gameLoopId);
-        finalScoreEl.innerText = score;
+        cancelAnimationFrame(gameLoopId); finalScoreEl.innerText = score;
         const modeName = modes[currentModeIndex].name;
         document.getElementById('leaderboardTitle').innerText = `${modeName} MODE`;
-
         let today = localStorage.getItem(`fj_today_${modeName}`) || 0;
         let week = localStorage.getItem(`fj_week_${modeName}`) || 0;
         let alltime = localStorage.getItem(`fj_alltime_${modeName}`) || 0;
-
         if(score > today) { today = score; localStorage.setItem(`fj_today_${modeName}`, score); }
         if(score > week) { week = score; localStorage.setItem(`fj_week_${modeName}`, score); }
         if(score > alltime) { alltime = score; localStorage.setItem(`fj_alltime_${modeName}`, score); }
-
         document.getElementById('todayBestVal').innerText = today;
         document.getElementById('weekBestVal').innerText = week;
         document.getElementById('allTimeBestVal').innerText = alltime;
-
         screenOverlay.style.display = 'flex';
     }
 
     function exitToMenu() {
-        stopBGM();
-        screenOverlay.style.display = 'none'; gameHUD.style.display = 'none';
+        stopBGM(); screenOverlay.style.display = 'none'; gameHUD.style.display = 'none';
         menuOverlay.style.display = 'flex'; updateMenuUI();
     }
 
@@ -726,83 +655,53 @@
     function gameLoop() {
         if (!gameRunning) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
         ctx.fillStyle = "#d1c9b0"; ctx.beginPath(); ctx.moveTo(0, canvas.height); ctx.lineTo(canvas.width * 0.5, canvas.height * 0.75); ctx.lineTo(canvas.width, canvas.height); ctx.fill();
-
-        if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - modes[currentModeIndex].gap) {
-            hoops.push(new Hoop());
-        }
+        if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - modes[currentModeIndex].gap) hoops.push(new Hoop());
 
         for (let i = particles.length - 1; i >= 0; i--) {
             let p = particles[i]; p.x += p.speedX; p.y += p.speedY; p.alpha -= 0.03;
             if(p.alpha <= 0) { particles.splice(i, 1); continue; }
-            ctx.fillStyle = `rgba(255, 215, 0, ${p.alpha})`; 
-            ctx.shadowBlur = 6; ctx.shadowColor = "#ffd700";
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
-            ctx.shadowBlur = 0; 
+            ctx.fillStyle = `rgba(255, 215, 0, ${p.alpha})`; ctx.shadowBlur = 6; ctx.shadowColor = "#ffd700";
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0; 
         }
 
         for (let i = hoops.length - 1; i >= 0; i--) {
-            let h = hoops[i]; h.x -= h.speed;
-            
-            h.drawRim();
-
+            let h = hoops[i]; h.x -= h.speed; h.drawRim();
             let rLeft = h.x + 6; let rRight = h.x + h.width - 6;
-
-            let dLeft = Math.hypot(ball.x - h.x, ball.y - h.y);
-            let dRight = Math.hypot(ball.x - (h.x + h.width), ball.y - h.y);
-            if(dLeft < ball.radius + 3 || dRight < ball.radius + 3) {
-                h.touchedRim = true;
-            }
+            let dLeft = Math.hypot(ball.x - h.x, ball.y - h.y); let dRight = Math.hypot(ball.x - (h.x + h.width), ball.y - h.y);
+            if(dLeft < ball.radius + 3 || dRight < ball.radius + 3) h.touchedRim = true;
 
             if (!h.passed && ball.x > rLeft && ball.x < rRight) {
-                if (ball.y > h.y && ball.velocity < 0 && Math.abs(ball.y - h.y) < ball.radius + 5) {
-                    triggerCross(h.x + h.width/2, h.y); return;
-                }
+                if (ball.y > h.y && ball.velocity < 0 && Math.abs(ball.y - h.y) < ball.radius + 5) { triggerCross(h.x + h.width/2, h.y); return; }
             }
-
             if (!h.passed && ball.x > rLeft && ball.x < rRight) {
                 if (ball.y >= h.y && (ball.y - ball.velocity) < h.y) {
                     h.passed = true;
-                    for(let k = 0; k < 15; k++) {
-                        createGoldenTrail(h.x + (Math.random() * h.width), h.y);
-                    }
-                    
+                    for(let k = 0; k < 15; k++) createGoldenTrail(h.x + (Math.random() * h.width), h.y);
                     if (!h.touchedRim) {
-                        swishStreak++;
-                        let mult = swishStreak + 1;
-                        score += mult;
-                        triggerSplash(mult === 2 ? `2X SWISH!` : `${mult}X MULTI!`);
-                        playBeep(880, 'sine', 0.15);
+                        swishStreak++; let mult = swishStreak + 1; score += mult;
+                        triggerSplash(mult === 2 ? `2X SWISH!` : `${mult}X MULTI!`); playBeep(880, 'sine', 0.15);
                     } else {
-                        swishStreak = 0; score += 1;
-                        playBeep(520, 'sine', 0.1);
+                        swishStreak = 0; score += 1; playBeep(520, 'sine', 0.1);
                     }
                     scoreEl.innerText = score;
                 }
             }
-
             if (!h.passed && ball.x > rRight + 10) { triggerCross(h.x + h.width/2, h.y); return; }
             if (h.x + h.width < 0) hoops.splice(i, 1);
         }
-
         ball.update(); ball.draw();
         gameLoopId = requestAnimationFrame(gameLoop);
     }
 
     window.addEventListener('keydown', (e) => { if(e.code === 'Space' && gameRunning) ball.flap(); });
-    
     document.getElementById('gameContainer').addEventListener('mousedown', (e) => {
         if (e.target.closest('#menuOverlay') || e.target.closest('#screenOverlay') || e.target.closest('.hud-audio-cluster') || e.target.closest('#loadingOverlay')) return;
         if (gameRunning) ball.flap();
     });
-
     document.getElementById('gameContainer').addEventListener('touchstart', (e) => {
         if (e.target.closest('#menuOverlay') || e.target.closest('#screenOverlay') || e.target.closest('.hud-audio-cluster') || e.target.closest('#loadingOverlay')) return;
-        if (gameRunning) {
-            ball.flap();
-            e.preventDefault();
-        }
+        if (gameRunning) { ball.flap(); e.preventDefault(); }
     }, { passive: false });
 
     window.addEventListener('resize', resizeCanvas);
