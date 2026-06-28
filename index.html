@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flappy Jump - Pro Arcade Edition</title>
+    <title>Flappy Jump - Master Edition</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -31,45 +31,41 @@
             top: 20px;
             width: 100%;
             display: flex;
-            justify-content: space-around;
+            justify-content: space-between;
             align-items: center;
-            z-index: 10;
-            display: none;
+            padding: 0 15px;
+            z-index: 15;
+            display: none; /* Game start hone par hi dikhega */
         }
         .score-box {
             background-color: #2b1d16;
             color: white;
-            padding: 5px 15px;
+            padding: 5px 12px;
             border-radius: 8px;
             text-align: center;
-            min-width: 105px;
+            min-width: 95px;
         }
-        .score-box .label { font-size: 10px; color: #aaa; font-weight: bold; }
-        .score-box .val { font-size: 20px; font-weight: bold; }
+        .score-box .label { font-size: 9px; color: #aaa; font-weight: bold; }
+        .score-box .val { font-size: 18px; font-weight: bold; }
         
-        /* Sound Controller Bar */
-        .audio-controls {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
+        /* Audio Buttons Container in Top HUD */
+        .audio-cluster {
             display: flex;
-            gap: 10px;
-            z-index: 15;
-            display: none;
+            gap: 8px;
         }
         .audio-btn {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             background-color: #2b1d16;
             border: 2px solid #5a4033;
             border-radius: 50%;
             color: white;
-            font-size: 16px;
+            font-size: 14px;
             cursor: pointer;
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 4px 0 #110906;
+            box-shadow: 0 3px 0 #110906;
         }
         .audio-btn.muted {
             background-color: #c0392b;
@@ -78,7 +74,7 @@
         
         canvas { display: block; width: 100%; height: 100%; }
 
-        /* Menu Panel Configurations */
+        /* Menu Panel Configuration */
         #menuOverlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -134,9 +130,9 @@
 
         .mode-title-text { font-size: 36px; font-weight: 900; text-transform: uppercase; }
         
-        /* Segmented Stepper Slider Control */
+        /* Interactive Stepper Track */
         .slider-wrapper {
-            width: 80%;
+            width: 85%;
             position: relative;
             padding: 10px 0;
         }
@@ -153,7 +149,7 @@
             height: 100%;
             border-radius: 12px;
             width: 0%;
-            transition: width 0.2s, background-color 0.2s;
+            transition: width 0.2s ease, background-color 0.2s ease;
         }
         .slider-thumb {
             position: absolute;
@@ -165,23 +161,23 @@
             background: white;
             border: 4px solid #2ecc71;
             transform: translateX(-50%);
-            transition: left 0.2s, border-color 0.2s;
+            transition: left 0.2s ease, border-color 0.2s ease;
             cursor: pointer;
         }
         
         .main-play-btn {
-            width: 80%; height: 55px; border: none; border-radius: 18px;
+            width: 85%; height: 55px; border: none; border-radius: 18px;
             font-size: 24px; font-weight: bold; color: white; cursor: pointer;
             text-transform: uppercase;
         }
 
-        /* Leaderboard Modal overlay screens */
+        /* Leaderboard Modal Overlays */
         #screenOverlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(40, 30, 40, 0.6);
             display: none; flex-direction: column;
-            justify-content: center; align-items: center; z-index: 20; padding: 20px;
+            justify-content: center; align-items: center; z-index: 25; padding: 20px;
         }
         .game-over-card {
             background-color: #a37c74; border-radius: 35px; width: 90%;
@@ -199,13 +195,13 @@
         .play-again-btn { background-color: #2ed573; color: white; border: none; border-radius: 15px; flex-grow: 1; height: 60px; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 5px 0 #26af5f; }
 
         #bonusSplash {
-            position: absolute; color: #ffd700; font-weight: bold; font-size: 28px;
-            display: none; text-shadow: 2px 2px 5px #000; z-index: 15; pointer-events: none;
-            animation: bounceIn 0.5s ease-out;
+            position: absolute; color: #ffd700; font-weight: bold; font-size: 30px;
+            display: none; text-shadow: 2px 2px 6px #000; z-index: 20; pointer-events: none;
+            animation: bounceIn 0.4s ease-out;
         }
         @keyframes bounceIn {
-            0% { transform: scale(0.3); opacity: 0; }
-            50% { transform: scale(1.1); }
+            0% { transform: scale(0.2); opacity: 0; }
+            70% { transform: scale(1.1); }
             100% { transform: scale(1); opacity: 1; }
         }
     </style>
@@ -215,12 +211,13 @@
 <div id="gameContainer">
     <div id="gameHUD" class="top-bar">
         <div class="score-box"><div id="hudModeName" class="label">EASY</div><div id="currentScore" class="val">0</div></div>
+        
+        <div class="audio-cluster">
+            <button id="musicBtn" class="audio-btn" onclick="toggleMusic()">🎵</button>
+            <button id="sfxBtn" class="audio-btn" onclick="toggleSFX()">🔊</button>
+        </div>
+
         <div class="score-box"><div class="label">ALL TIME</div><div id="highScore" class="val">0</div></div>
-    </div>
-    
-    <div id="audioControls" class="audio-controls">
-        <button id="musicBtn" class="audio-btn" onclick="toggleMusic()">🎵</button>
-        <button id="sfxBtn" class="audio-btn" onclick="toggleSFX()">🔊</button>
     </div>
 
     <div id="bonusSplash">2X SWISH!</div>
@@ -282,7 +279,6 @@
     const screenOverlay = document.getElementById('screenOverlay');
     const menuOverlay = document.getElementById('menuOverlay');
     const gameHUD = document.getElementById('gameHUD');
-    const audioControls = document.getElementById('audioControls');
     const finalScoreEl = document.getElementById('finalScore');
     
     const menuAvatar = document.getElementById('menuAvatar');
@@ -292,7 +288,7 @@
     const avatarMouth = document.getElementById('avatarMouth');
     const playBtn = document.getElementById('playBtn');
 
-    let currentModeIndex = 0; // 0: Easy, 1: Medium, 2: Hard
+    let currentModeIndex = 0; 
     const modes = [
         { name: "EASY", color: "#2ecc71", fill: "0%", speed: 2.0, gap: 270, box: "#27ae60" },
         { name: "MEDIUM", color: "#f1c40f", fill: "50%", speed: 2.7, gap: 230, box: "#d4ac0d" },
@@ -306,24 +302,27 @@
     function toggleMusic() {
         musicEnabled = !musicEnabled;
         document.getElementById('musicBtn').classList.toggle('muted', !musicEnabled);
+        playBeep(450, 'sine', 0.05);
     }
     function toggleSFX() {
         sfxEnabled = !sfxEnabled;
         document.getElementById('sfxBtn').classList.toggle('muted', !sfxEnabled);
+        if(sfxEnabled) playBeep(550, 'sine', 0.05);
     }
 
-    // Dynamic Synthesized Web Audio Engine
     function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
     function playBeep(freq, type, duration) {
         if (!sfxEnabled) return;
-        initAudio();
-        let osc = audioCtx.createOscillator();
-        let gain = audioCtx.createGain();
-        osc.type = type; osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.start(); osc.stop(audioCtx.currentTime + duration);
+        try {
+            initAudio();
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
+        } catch(e){}
     }
 
     function resizeCanvas() {
@@ -380,7 +379,6 @@
         }
         draw() {
             ctx.fillStyle = "#ffffff"; ctx.strokeStyle = "#000000"; ctx.lineWidth = 2.5;
-            // Wings
             ctx.beginPath();
             let wingY = (this.velocity < 0) ? -5 : 2;
             let angle = (this.velocity < 0) ? -Math.PI/6 : Math.PI/6;
@@ -388,7 +386,6 @@
             ctx.ellipse(this.x + 16, this.y + wingY, 12, 6, -angle, 0, Math.PI * 2);
             ctx.fill(); ctx.stroke();
 
-            // Basketball Body
             ctx.fillStyle = "#e67e22"; ctx.beginPath();
             ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
             ctx.lineWidth = 1.5; ctx.beginPath();
@@ -407,7 +404,7 @@
         constructor() {
             this.x = canvas.width + 60;
             this.y = Math.random() * (canvas.height * 0.45) + (canvas.height * 0.22);
-            this.width = 95; this.height = 22; // Regular thick ring shape 
+            this.width = 95; this.height = 22; 
             this.speed = modes[currentModeIndex].speed;
             this.passed = false;
             this.touchedRim = false;
@@ -422,17 +419,14 @@
             ctx.fillStyle = grad; ctx.beginPath();
             ctx.ellipse(this.x + this.width/2, this.y, this.width/2, this.height/2, 0, 0, Math.PI * 2); ctx.fill();
 
-            // Specular shiny glow line
             ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
             ctx.beginPath(); ctx.ellipse(this.x + this.width/2, this.y - 3, this.width/2.2, this.height/4, 0, Math.PI, Math.PI * 2); ctx.stroke();
 
-            // Render Protection Shield if configured active
             if (this.hasShield) {
                 ctx.save();
                 ctx.lineWidth = 4; ctx.strokeStyle = "rgba(0, 255, 240, 0.8)";
                 ctx.shadowBlur = 10; ctx.shadowColor = "#00fff0";
                 ctx.beginPath();
-                // Lower curved protection shield plate design
                 ctx.arc(this.x + this.width/2, this.y + 6, this.width/2 + 5, 0, Math.PI);
                 ctx.stroke();
                 ctx.restore();
@@ -441,7 +435,6 @@
     }
 
     function createGlowTrail(x, y) {
-        // Emit sparkling golden trails tracking behind the traveling rim
         for(let i=0; i<2; i++) {
             particles.push({
                 x: x, y: y + (Math.random() * 10 - 5),
@@ -454,7 +447,7 @@
     function launchGame() {
         initAudio();
         menuOverlay.style.display = 'none'; screenOverlay.style.display = 'none';
-        gameHUD.style.display = 'flex'; audioControls.style.display = 'flex';
+        gameHUD.style.display = 'flex';
         
         showCross = false; swishStreak = 0;
         ball = new Ball(); hoops = [new Hoop()]; particles = [];
@@ -475,7 +468,6 @@
         hoops.forEach(h => h.drawRim());
         ball.draw();
 
-        // Cross Display Animation Mark
         ctx.lineWidth = 15; ctx.strokeStyle = "rgba(75, 65, 65, 0.9)"; ctx.lineCap = "round";
         ctx.beginPath(); ctx.moveTo(x - 40, y - 40); ctx.lineTo(x + 40, y + 40); ctx.moveTo(x + 40, y - 40); ctx.lineTo(x - 40, y + 40); ctx.stroke();
 
@@ -504,14 +496,14 @@
     }
 
     function exitToMenu() {
-        screenOverlay.style.display = 'none'; gameHUD.style.display = 'none'; audioControls.style.display = 'none';
+        screenOverlay.style.display = 'none'; gameHUD.style.display = 'none';
         menuOverlay.style.display = 'flex'; updateMenuUI();
     }
 
     function triggerSplash(txt) {
         const sp = document.getElementById('bonusSplash');
         sp.innerText = txt; sp.style.display = 'block';
-        sp.style.left = (canvas.width / 2 - 70) + 'px'; sp.style.top = (canvas.height * 0.35) + 'px';
+        sp.style.left = (canvas.width / 2 - 80) + 'px'; sp.style.top = (canvas.height * 0.35) + 'px';
         setTimeout(() => { sp.style.display = 'none'; }, 900);
     }
 
@@ -519,17 +511,15 @@
         if (!gameRunning) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Ground Mesh
         ctx.fillStyle = "#d1c9b0"; ctx.beginPath(); ctx.moveTo(0, canvas.height); ctx.lineTo(canvas.width * 0.5, canvas.height * 0.75); ctx.lineTo(canvas.width, canvas.height); ctx.fill();
 
+        const config = modes[currentModeIndex];
         if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - modes[currentModeIndex].gap) {
             let nH = new Hoop();
-            // Inject Shield automatically on specific tier checklist scores
             if([12, 24, 34, 56, 89].includes(score)) nH.hasShield = true;
             hoops.push(nH);
         }
 
-        // Handle Trails particles pipeline loops
         for (let i = particles.length - 1; i >= 0; i--) {
             let p = particles[i]; p.x += p.speedX; p.alpha -= 0.02;
             if(p.alpha <= 0) { particles.splice(i, 1); continue; }
@@ -540,7 +530,6 @@
         for (let i = hoops.length - 1; i >= 0; i--) {
             let h = hoops[i]; h.x -= h.speed;
             
-            // Continuous sparkling glow calculation trail
             createGlowTrail(h.x + h.width, h.y);
             createGlowTrail(h.x, h.y);
 
@@ -548,32 +537,28 @@
 
             let rLeft = h.x + 6; let rRight = h.x + h.width - 6;
 
-            // Shield Break Logic check
             if (h.hasShield) {
                 let distToCenter = Math.hypot(ball.x - (h.x + h.width/2), ball.y - h.y);
                 if (distToCenter < ball.radius + h.width/2) {
-                    h.hasShield = false; // Save ball from immediate death once
-                    ball.velocity = -5; // Bounce up
+                    h.hasShield = false; 
+                    ball.velocity = -5; 
                     playBeep(600, 'triangle', 0.25);
                     continue;
                 }
             }
 
-            // Collide testing with edge sides boundary limits
             let dLeft = Math.hypot(ball.x - h.x, ball.y - h.y);
             let dRight = Math.hypot(ball.x - (h.x + h.width), ball.y - h.y);
             if(dLeft < ball.radius + 3 || dRight < ball.radius + 3) {
                 h.touchedRim = true;
             }
 
-            // Down side approach strict failure check
             if (!h.passed && ball.x > rLeft && ball.x < rRight) {
                 if (ball.y > h.y && ball.velocity < 0 && Math.abs(ball.y - h.y) < ball.radius + 5) {
                     triggerCross(h.x + h.width/2, h.y); return;
                 }
             }
 
-            // Passing cross update scoring action validation
             if (!h.passed && ball.x > rLeft && ball.x < rRight) {
                 if (ball.y >= h.y && (ball.y - ball.velocity) < h.y) {
                     h.passed = true;
@@ -591,7 +576,6 @@
                 }
             }
 
-            // Missed loop logic check
             if (!h.passed && ball.x > rRight + 10) { triggerCross(h.x + h.width/2, h.y); return; }
             if (h.x + h.width < 0) hoops.splice(i, 1);
         }
