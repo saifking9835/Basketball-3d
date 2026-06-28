@@ -184,7 +184,7 @@
 <div id="gameContainer">
     <div class="top-bar">
         <div class="score-box">
-            <div class="label">SCORE</div>
+            <div class="label">HARD MODE</div>
             <div id="currentScore" class="val">0</div>
         </div>
         <div class="score-box all-time">
@@ -267,6 +267,7 @@
             this.y = canvas.height / 2;
             this.radius = 14;
             this.velocity = 0;
+            this.bounceX = 0; // Dante se takrane ka physics effect
         }
         draw() {
             ctx.fillStyle = "#ffffff";
@@ -308,11 +309,16 @@
         update() {
             this.velocity += 0.38;
             this.y += this.velocity;
+            this.x += this.bounceX;
+            this.bounceX *= 0.95; // Horizontal friction slows down after bounce
+
             if (this.y + this.radius > canvas.height || this.y - this.radius < 0) {
                 triggerCross(canvas.width / 2, canvas.height / 2);
             }
         }
-        flap() { this.velocity = -7.2; }
+        flap() { 
+            this.velocity = -7.2; 
+        }
     }
 
     class Hoop {
@@ -320,7 +326,7 @@
             this.x = canvas.width + 60;
             this.y = Math.random() * (canvas.height * 0.45) + (canvas.height * 0.25);
             this.width = 90; 
-            this.height = 14;
+            this.height = 16;
             this.speed = 2.4;
             this.passed = false;
             this.touchedRim = false; 
@@ -338,16 +344,29 @@
             ctx.fill(); ctx.stroke();
         }
         drawRim() {
+            // Realistic 3D Ellipse Rim with dynamic shading gradients
             ctx.lineWidth = 6;
-            ctx.strokeStyle = "#000000";
+            ctx.strokeStyle = "#1e1e1e"; // Solid Black Base border
             ctx.beginPath();
             ctx.ellipse(this.x + this.width/2, this.y, this.width/2, this.height/2, 0, 0, Math.PI * 2);
             ctx.stroke();
 
-            ctx.lineWidth = 4;
-            ctx.strokeStyle = "#ff4757";
+            // Red Glossy Gradient Ring Filler
+            let gradient = ctx.createLinearGradient(this.x, this.y - this.height/2, this.x, this.y + this.height/2);
+            gradient.addColorStop(0, "#ff6b81"); // Soft top light
+            gradient.addColorStop(0.4, "#ff4757"); // Bright real red
+            gradient.addColorStop(1, "#c02c39"); // Bottom shadow rim
+            
+            ctx.fillStyle = gradient;
             ctx.beginPath();
             ctx.ellipse(this.x + this.width/2, this.y, this.width/2, this.height/2, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Real 3D White Specular Shine (Highlight curve line)
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+            ctx.beginPath();
+            ctx.ellipse(this.x + this.width/2, this.y - 2, this.width/2.3, this.height/4, 0, Math.PI, Math.PI * 2);
             ctx.stroke();
         }
         update() { this.x -= this.speed; }
@@ -393,7 +412,6 @@
         crossX = x;
         crossY = y;
 
-        // Render cross frame instantly
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "#d1c9b0";
         ctx.beginPath(); ctx.moveTo(0, canvas.height); ctx.lineTo(canvas.width * 0.5, canvas.height * 0.75); ctx.lineTo(canvas.width, canvas.height); ctx.fill();
@@ -454,20 +472,32 @@
             let leftRimX = h.x;
             let rightRimX = h.x + h.width;
 
-            if (Math.hypot(ball.x - leftRimX, ball.y - h.y) < ball.radius + 3 || Math.hypot(ball.x - rightRimX, ball.y - h.y) < ball.radius + 3) {
+            // REALISTIC DANTE BOUNCE & DETECTION
+            let distToLeftRim = Math.hypot(ball.x - leftRimX, ball.y - h.y);
+            let distToRightRim = Math.hypot(ball.x - rightRimX, ball.y - h.y);
+            
+            if (distToLeftRim < ball.radius + 4 || distToRightRim < ball.radius + 4) {
                 h.touchedRim = true;
+                // Realistic vector deflection force bounce physics
+                if (ball.y < h.y) {
+                    ball.velocity = -Math.abs(ball.velocity) * 0.5; // Physics reflection upward bounce
+                    ball.bounceX = (ball.x < h.x + h.width/2) ? -2.5 : 2.5;
+                }
             }
 
+            // Down to Top entry out trigger
             if (!h.passed && ball.x > leftRimX && ball.x < rightRimX) {
                 if (ball.y > h.y && ball.velocity < 0 && Math.abs(ball.y - h.y) < ball.radius + 5) {
                     triggerCross(h.x + h.width/2, h.y); return;
                 }
             }
 
+            // Successful top-to-bottom dunk
             if (!h.passed && ball.x > leftRimX && ball.x < rightRimX) {
                 if (ball.y >= h.y && (ball.y - ball.velocity) < h.y) {
                     h.passed = true;
                     let hoopCenter = h.x + h.width / 2;
+                    // Agar center 15px radius ke andar se nikli bina dante touch kiye to 2x milta hai
                     if (!h.touchedRim && Math.abs(ball.x - hoopCenter) < 15) {
                         score += 2;
                         showBonusEffect(ball.x, ball.y);
@@ -478,7 +508,8 @@
                 }
             }
 
-            if (!h.passed && ball.x > rightRimX + 10) { 
+            // Missed ring trigger
+            if (!h.passed && ball.x > rightRimX + 15) { 
                 triggerCross(h.x + h.width/2, h.y); return; 
             }
             if (h.x + h.width < 0) hoops.splice(i, 1);
@@ -498,7 +529,6 @@
     weekBestEl.innerText = weekBest;
     allTimeBestEl.innerText = highScore;
     
-    // Auto-trigger game initiation on load
     startGame();
 </script>
 </body>
