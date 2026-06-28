@@ -44,12 +44,12 @@
         .score-box.all-time .val { color: #2ed573; }
         canvas { display: block; width: 100%; height: 100%; }
         
-        /* Game Over Overlay Screen (Matching Image) */
+        /* Game Over Overlay Screen */
         #screenOverlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(40, 30, 40, 0.6);
-            display: flex;
+            display: none; /* Default hidden, triggered after cross animation */
             flex-direction: column;
             justify-content: center;
             align-items: center;
@@ -251,8 +251,10 @@
     resizeCanvas();
 
     let ball, hoops, score, gameRunning, gameLoopId;
+    let showCross = false; 
+    let crossHoopX = 0;
+    let crossHoopY = 0;
     
-    // Scores storage setup
     let highScore = localStorage.getItem('fd_alltime') || 0;
     let todayBest = localStorage.getItem('fd_today') || 0;
     let weekBest = localStorage.getItem('fd_week') || 0;
@@ -271,7 +273,7 @@
             ctx.strokeStyle = "#000000";
             ctx.lineWidth = 2.5;
 
-            // Left Wing
+            // Wings
             ctx.beginPath();
             if (this.velocity < 0) {
                 ctx.ellipse(this.x - 16, this.y - 5, 12, 6, -Math.PI/6, 0, Math.PI * 2);
@@ -280,7 +282,6 @@
             }
             ctx.fill(); ctx.stroke();
 
-            // Right Wing
             ctx.beginPath();
             if (this.velocity < 0) {
                 ctx.ellipse(this.x + 16, this.y - 5, 12, 6, Math.PI/6, 0, Math.PI * 2);
@@ -305,10 +306,11 @@
             ctx.stroke();
         }
         update() {
-            this.velocity += 0.38; // gravity
+            this.velocity += 0.38;
             this.y += this.velocity;
             if (this.y + this.radius > canvas.height || this.y - this.radius < 0) {
-                gameOver();
+                // Agar bina ring touch kiye boundary par out hua toh screen center me cross banega
+                triggerCross(canvas.width / 2, canvas.height / 2);
             }
         }
         flap() { this.velocity = -7.2; }
@@ -325,25 +327,49 @@
             this.touchedRim = false; 
         }
         drawNet() {
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
-            ctx.lineWidth = 2;
-            ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+            ctx.lineWidth = 2.5;
+            ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
             ctx.beginPath();
-            ctx.moveTo(this.x, this.y);
-            ctx.lineTo(this.x + 15, this.y + 35);
-            ctx.lineTo(this.x + this.width - 15, this.y + 35);
-            ctx.lineTo(this.x + this.width, this.y);
+            ctx.moveTo(this.x + 5, this.y);
+            ctx.lineTo(this.x + 18, this.y + 35);
+            ctx.lineTo(this.x + this.width - 18, this.y + 35);
+            ctx.lineTo(this.x + this.width - 5, this.y);
             ctx.closePath();
             ctx.fill(); ctx.stroke();
         }
         drawRim() {
+            // Realistic Rim drawing with dual stroke outlines
             ctx.lineWidth = 6;
-            ctx.strokeStyle = "#ff4757";
+            ctx.strokeStyle = "#000000"; // Outer Black Border
+            ctx.beginPath();
+            ctx.ellipse(this.x + this.width/2, this.y, this.width/2, this.height/2, 0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = "#ff4757"; // Inner Bright Red Rim
             ctx.beginPath();
             ctx.ellipse(this.x + this.width/2, this.y, this.width/2, this.height/2, 0, 0, Math.PI * 2);
             ctx.stroke();
         }
         update() { this.x -= this.speed; }
+    }
+
+    function drawCrossMark(x, y) {
+        ctx.save();
+        ctx.lineWidth = 16;
+        ctx.strokeStyle = "rgba(80, 70, 70, 0.85)"; // Dark Grey-Reddish Cross
+        ctx.lineCap = "round";
+        
+        let size = 45;
+        // Drawing X lines
+        ctx.beginPath();
+        ctx.moveTo(x - size, y - size);
+        ctx.lineTo(x + size, y + size);
+        ctx.moveTo(x + size, y - size);
+        ctx.lineTo(x - size, y + size);
+        ctx.stroke();
+        ctx.restore();
     }
 
     function showBonusEffect(x, y) {
@@ -355,6 +381,7 @@
 
     function startGame() {
         overlay.style.display = 'none';
+        showCross = false;
         ball = new Ball();
         hoops = [new Hoop()];
         score = 0;
@@ -364,13 +391,30 @@
         gameLoop();
     }
 
-    function gameOver() {
+    function triggerCross(x, y) {
         gameRunning = false;
+        showCross = true;
+        crossHoopX = x;
+        crossHoopY = y;
+
+        // Play cross overlay check frame
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Draw background decor
+        ctx.fillStyle = "#d1c9b0";
+        ctx.beginPath(); ctx.moveTo(0, canvas.height); ctx.lineTo(canvas.width * 0.5, canvas.height * 0.75); ctx.lineTo(canvas.width, canvas.height); ctx.fill();
+        // Redraw current positions static
+        hoops.forEach(h => { h.drawNet(); h.drawRim(); });
+        ball.draw();
+        drawCrossMark(crossHoopX, crossHoopY);
+
+        // 1 Second ke baad automatic Leaderboard card show karega
+        setTimeout(showLeaderboardCard, 1000);
+    }
+
+    function showLeaderboardCard() {
         cancelAnimationFrame(gameLoopId);
-        
         finalScoreEl.innerText = score;
 
-        // Highscore update logic
         if (score > todayBest) { todayBest = score; localStorage.setItem('fd_today', todayBest); }
         if (score > weekBest) { weekBest = score; localStorage.setItem('fd_week', weekBest); }
         if (score > highScore) { 
@@ -379,7 +423,6 @@
             highScoreEl.innerText = highScore;
         }
 
-        // Leaderboard labels refresh
         todayBestEl.innerText = todayBest;
         weekBestEl.innerText = weekBest;
         allTimeBestEl.innerText = highScore;
@@ -388,13 +431,12 @@
     }
 
     function resetLeaderboard() {
-        // Home button clicked: clears scores for a fresh start
         localStorage.setItem('fd_today', 0);
         localStorage.setItem('fd_week', 0);
         localStorage.setItem('fd_alltime', 0);
         todayBest = 0; weekBest = 0; highScore = 0;
         highScoreEl.innerText = 0;
-        alert("Scores Reset Successfully!");
+        alert("Scores Reset!");
         startGame();
     }
 
@@ -402,13 +444,8 @@
         if (!gameRunning) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Simple Background
         ctx.fillStyle = "#d1c9b0";
-        ctx.beginPath();
-        ctx.moveTo(0, canvas.height);
-        ctx.lineTo(canvas.width * 0.5, canvas.height * 0.75);
-        ctx.lineTo(canvas.width, canvas.height);
-        ctx.fill();
+        ctx.beginPath(); ctx.moveTo(0, canvas.height); ctx.lineTo(canvas.width * 0.5, canvas.height * 0.75); ctx.lineTo(canvas.width, canvas.height); ctx.fill();
 
         if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - 240) {
             hoops.push(new Hoop());
@@ -424,19 +461,18 @@
             let leftRimX = h.x;
             let rightRimX = h.x + h.width;
 
-            // Rim collision
             if (Math.hypot(ball.x - leftRimX, ball.y - h.y) < ball.radius + 3 || Math.hypot(ball.x - rightRimX, ball.y - h.y) < ball.radius + 3) {
                 h.touchedRim = true;
             }
 
-            // Down to Top Entry -> Out
+            // Down to Top entry out trigger
             if (!h.passed && ball.x > leftRimX && ball.x < rightRimX) {
                 if (ball.y > h.y && ball.velocity < 0 && Math.abs(ball.y - h.y) < ball.radius + 5) {
-                    gameOver(); return;
+                    triggerCross(h.x + h.width/2, h.y); return;
                 }
             }
 
-            // Top to Down Score Dunk
+            // Successful top-to-bottom dunk
             if (!h.passed && ball.x > leftRimX && ball.x < rightRimX) {
                 if (ball.y >= h.y && (ball.y - ball.velocity) < h.y) {
                     h.passed = true;
@@ -451,7 +487,10 @@
                 }
             }
 
-            if (!h.passed && ball.x > rightRimX + 10) { gameOver(); return; }
+            // Missed ring trigger
+            if (!h.passed && ball.x > rightRimX + 10) { 
+                triggerCross(h.x + h.width/2, h.y); return; 
+            }
             if (h.x + h.width < 0) hoops.splice(i, 1);
         }
 
@@ -465,7 +504,6 @@
     canvas.addEventListener('mousedown', () => { if (gameRunning) ball.flap(); });
     window.addEventListener('resize', resizeCanvas);
     
-    // Auto load first play screen overlay elements
     todayBestEl.innerText = todayBest;
     weekBestEl.innerText = weekBest;
     allTimeBestEl.innerText = highScore;
