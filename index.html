@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flappy Jump Professional with Loader</title>
+    <title>Flappy Jump Professional with Premium Loader</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -35,56 +35,102 @@
             z-index: 1;
         }
 
-        /* NEW LOADING SCREEN OVERLAY */
+        /* PREMIUM CINEMATIC LOADING SCREEN */
         #loadingOverlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(to bottom, #2c3e50, #1a252f);
+            background: radial-gradient(circle, #2c3e50 0%, #0f171e 100%);
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: space-between;
             z-index: 100;
-            padding: 20px;
-            transition: opacity 0.5s ease-out;
+            padding: 50px 20px;
+            transition: opacity 0.6s cubic-bezier(0.25, 1, 0.5, 1), filter 0.6s ease;
+        }
+        .loader-center-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: auto;
+            margin-bottom: auto;
+            width: 100%;
         }
         .loader-title {
             color: #ffffff;
-            font-size: 36px;
+            font-size: 42px;
             font-weight: 900;
-            letter-spacing: 2px;
-            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            margin-bottom: 5px;
+            letter-spacing: 3px;
+            text-align: center;
+            animation: neonGlow 2s ease-in-out infinite alternate;
         }
         .loader-subtitle {
             color: #3498db;
-            font-size: 13px;
+            font-size: 11px;
             text-transform: uppercase;
-            letter-spacing: 3px;
-            margin-bottom: 40px;
+            letter-spacing: 5px;
+            margin-top: 5px;
+            margin-bottom: 50px;
             font-weight: bold;
+            opacity: 0.8;
+        }
+        .loader-ball-avatar {
+            width: 45px;
+            height: 45px;
+            background-color: #e67e22;
+            border: 3px solid #fff;
+            border-radius: 50%;
+            margin-bottom: 20px;
+            box-shadow: 0 0 15px #e67e22;
+            animation: pulseBounce 1.2s infinite ease-in-out;
         }
         .loader-bar-bg {
-            width: 75%;
-            height: 14px;
-            background-color: #34495e;
-            border-radius: 10px;
+            width: 80%;
+            height: 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
             overflow: hidden;
-            box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
-            border: 2px solid #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(5px);
         }
         .loader-bar-fill {
             height: 100%;
             width: 0%;
-            background: linear-gradient(to right, #2ecc71, #27ae60);
-            border-radius: 8px;
+            background: linear-gradient(90deg, #00d2ff, #0066ff);
+            box-shadow: 0 0 10px #00d2ff;
+            border-radius: 20px;
             transition: width 0.1s linear;
         }
         .loader-text {
-            color: #b2bec3;
+            color: #ffffff;
             font-size: 14px;
-            margin-top: 12px;
+            margin-top: 15px;
             font-weight: bold;
+            letter-spacing: 1px;
+            opacity: 0.9;
+        }
+        .made-by-saif {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 12px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-top: auto;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* KEYFRAME ANIMATIONS FOR LOADER */
+        @keyframes neonGlow {
+            from {
+                text-shadow: 0 0 10px rgba(255,255,255,0.8), 0 0 20px rgba(0,210,255,0.8);
+            }
+            to {
+                text-shadow: 0 0 5px rgba(255,255,255,0.6), 0 0 10px rgba(0,210,255,0.4);
+            }
+        }
+        @keyframes pulseBounce {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-8px) scale(1.05); }
         }
 
         /* Top HUD Panel */
@@ -111,7 +157,6 @@
         .score-box .label { font-size: 9px; color: #aaa; font-weight: bold; text-transform: uppercase; }
         .score-box .val { font-size: 18px; font-weight: bold; }
         
-        /* Compact Audio Grid inside HUD */
         .hud-audio-cluster {
             display: flex;
             gap: 8px;
@@ -148,7 +193,7 @@
             justify-content: space-between;
             z-index: 40;
             padding: 60px 20px;
-            display: none; /* Initially hidden until loader completes */
+            display: none;
         }
         .menu-header h1 { color: white; font-size: 38px; text-shadow: 0 4px 6px rgba(0,0,0,0.25); text-align: center; }
         .menu-header p { color: #fff1e0; font-size: 13px; margin-top: 6px; text-align: center; opacity: 0.9; }
@@ -267,12 +312,16 @@
 
 <div id="gameContainer">
     <div id="loadingOverlay">
-        <div class="loader-title">FLAPPY JUMP</div>
-        <div class="loader-subtitle">Loading Assets...</div>
-        <div class="loader-bar-bg">
-            <div id="loaderBarFill" class="loader-bar-fill"></div>
+        <div class="loader-center-content">
+            <div class="loader-title">FLAPPY JUMP</div>
+            <div class="loader-subtitle">Loading Experience</div>
+            <div class="loader-ball-avatar"></div>
+            <div class="loader-bar-bg">
+                <div id="loaderBarFill" class="loader-bar-fill"></div>
+            </div>
+            <div id="loaderText" class="loader-text">0%</div>
         </div>
-        <div id="loaderText" class="loader-text">0%</div>
+        <div class="made-by-saif">Made by Saif</div>
     </div>
 
     <div id="gameHUD" class="top-bar">
@@ -360,7 +409,7 @@
     const avatarMouth = document.getElementById('avatarMouth');
     const playBtn = document.getElementById('playBtn');
 
-    // Loading Elements
+    // Loader Elements
     const loadingOverlay = document.getElementById('loadingOverlay');
     const loaderBarFill = document.getElementById('loaderBarFill');
     const loaderText = document.getElementById('loaderText');
@@ -377,7 +426,6 @@
     let audioCtx = null;
     let bgmNode = null;
 
-    // RUN LOADER AUTOMATICALLY ON PAGE LOAD
     window.addEventListener('DOMContentLoaded', () => {
         runLoadingScreen();
     });
@@ -385,22 +433,24 @@
     function runLoadingScreen() {
         let progress = 0;
         const interval = setInterval(() => {
-            progress += Math.floor(Math.random() * 5) + 2; // Random fast Increments
+            progress += Math.floor(Math.random() * 4) + 2; 
             if (progress >= 100) {
                 progress = 100;
                 clearInterval(interval);
                 setTimeout(() => {
+                    // Premium Blur + Fade transition
+                    loadingOverlay.style.filter = "blur(10px)";
                     loadingOverlay.style.opacity = 0;
                     setTimeout(() => {
                         loadingOverlay.style.display = 'none';
-                        menuOverlay.style.display = 'flex'; // Reveal main menu smoothly
+                        menuOverlay.style.display = 'flex'; 
                         updateMenuUI();
-                    }, 500);
+                    }, 600);
                 }, 400);
             }
             loaderBarFill.style.width = progress + '%';
             loaderText.innerText = progress + '%';
-        }, 60);
+        }, 50);
     }
 
     function initAudio() { 
