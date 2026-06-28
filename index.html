@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flappy Dunk Pro</title>
+    <title>Original Flappy Dunk Clone</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -65,7 +65,6 @@
             border-radius: 25px;
             cursor: pointer;
         }
-        /* Perfect Swish Pop-up text style */
         #bonusText {
             position: absolute;
             color: #ffd700;
@@ -132,23 +131,23 @@
         draw() {
             ctx.fillStyle = "#ffffff";
             ctx.strokeStyle = "#000000";
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 2.5;
 
             // Left Wing
             ctx.beginPath();
             if (this.velocity < 0) {
-                ctx.ellipse(this.x - 16, this.y - 4, 11, 6, -Math.PI/6, 0, Math.PI * 2);
+                ctx.ellipse(this.x - 16, this.y - 5, 12, 6, -Math.PI/6, 0, Math.PI * 2);
             } else {
-                ctx.ellipse(this.x - 16, this.y, 11, 6, Math.PI/6, 0, Math.PI * 2);
+                ctx.ellipse(this.x - 16, this.y + 2, 12, 6, Math.PI/6, 0, Math.PI * 2);
             }
             ctx.fill(); ctx.stroke();
 
             // Right Wing
             ctx.beginPath();
             if (this.velocity < 0) {
-                ctx.ellipse(this.x + 16, this.y - 4, 11, 6, Math.PI/6, 0, Math.PI * 2);
+                ctx.ellipse(this.x + 16, this.y - 5, 12, 6, Math.PI/6, 0, Math.PI * 2);
             } else {
-                ctx.ellipse(this.x + 16, this.y, 11, 6, -Math.PI/6, 0, Math.PI * 2);
+                ctx.ellipse(this.x + 16, this.y + 2, 12, 6, -Math.PI/6, 0, Math.PI * 2);
             }
             ctx.fill(); ctx.stroke();
 
@@ -158,7 +157,8 @@
             ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
             ctx.fill(); ctx.stroke();
             
-            // Lines
+            // Real Ball Texture Lines
+            ctx.lineWidth = 1.5;
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.radius, -Math.PI/4, Math.PI * 0.75);
             ctx.stroke();
@@ -181,15 +181,39 @@
         constructor() {
             this.x = canvas.width + 60;
             this.y = Math.random() * (canvas.height * 0.45) + (canvas.height * 0.25);
-            this.width = 90; // Ring ka size bada kar diya (70 se 90)
+            this.width = 90; 
             this.height = 14;
             this.speed = 2.4;
             this.passed = false;
             this.touchedRim = false; 
         }
-        draw() {
+        drawNet() {
+            // Drawing the net underneath the hoop
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
+            ctx.lineWidth = 2;
+            ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+            
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y);
+            ctx.lineTo(this.x + 15, this.y + 35);
+            ctx.lineTo(this.x + this.width - 15, this.y + 35);
+            ctx.lineTo(this.x + this.width, this.y);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Net criss-cross pattern lines
+            ctx.beginPath();
+            ctx.moveTo(this.x + 20, this.y); ctx.lineTo(this.x + this.width - 20, this.y + 35);
+            ctx.moveTo(this.x + 45, this.y); ctx.lineTo(this.x + this.width - 35, this.y + 35);
+            ctx.moveTo(this.x + this.width - 20, this.y); ctx.lineTo(this.x + 20, this.y + 35);
+            ctx.moveTo(this.x + this.width - 45, this.y); ctx.lineTo(this.x + 35, this.y + 35);
+            ctx.stroke();
+        }
+        drawRim() {
+            // Original Oval Red Rim 
             ctx.lineWidth = 6;
-            ctx.strokeStyle = "#ff4757";
+            ctx.strokeStyle = "#ff4757"; // Original Red
             ctx.beginPath();
             ctx.ellipse(this.x + this.width/2, this.y, this.width/2, this.height/2, 0, 0, Math.PI * 2);
             ctx.stroke();
@@ -239,16 +263,20 @@
             hoops.push(new Hoop());
         }
 
+        // Draw Net first so ball passes *over* or *in front* of it
+        for (let i = 0; i < hoops.length; i++) {
+            hoops[i].drawNet();
+        }
+
         for (let i = hoops.length - 1; i >= 0; i--) {
             let h = hoops[i];
             h.update();
-            h.draw();
+            h.drawRim(); // Rim stays visible on top
 
-            // Left rim aur Right rim ki horizontal positions
             let leftRimX = h.x;
             let rightRimX = h.x + h.width;
 
-            // 1. RIM TOUCH DETECTION (Dono kinaro par touch check)
+            // 1. RIM TOUCH DETECTION 
             let distToLeftRim = Math.hypot(ball.x - leftRimX, ball.y - h.y);
             let distToRightRim = Math.hypot(ball.x - rightRimX, ball.y - h.y);
             
@@ -256,9 +284,8 @@
                 h.touchedRim = true;
             }
 
-            // 2. WRONG ENTRY DETECTION (Niche se ring cross karne par OUT)
+            // 2. WRONG ENTRY DETECTION (Niche se cross karne par OUT)
             if (!h.passed && ball.x > leftRimX && ball.x < rightRimX) {
-                // Agar ball niche se upar aa rahi hai aur ring ko touch/cross karti hai
                 if (ball.y > h.y && ball.velocity < 0 && Math.abs(ball.y - h.y) < ball.radius + 5) {
                     gameOver();
                     return;
@@ -267,20 +294,16 @@
 
             // 3. SUCCESSFUL TOP-TO-BOTTOM DUNK DETECTION
             if (!h.passed && ball.x > leftRimX && ball.x < rightRimX) {
-                // Ball upar se niche ja rahi hai aur ring center line cross kar rahi hai
                 if (ball.y >= h.y && (ball.y - ball.velocity) < h.y) {
                     h.passed = true;
                     
-                    // Bich ka center point check (Swish logic)
                     let hoopCenter = h.x + h.width / 2;
                     let distanceFromCenter = Math.abs(ball.x - hoopCenter);
 
-                    if (!h.touchedRim && distanceFromCenter < 12) {
-                        // 2X Multiply Points (Perfect Swish)
+                    if (!h.touchedRim && distanceFromCenter < 15) {
                         score += 2;
                         showBonusEffect(ball.x, ball.y);
                     } else {
-                        // Normal 1 Point (Touch hoke nikli ya center se door thi)
                         score += 1;
                     }
 
@@ -293,13 +316,12 @@
                 }
             }
 
-            // Missed Hoop check (Bina andar gaye aage nikal gaya toh Out)
+            // Missed Hoop check
             if (!h.passed && ball.x > rightRimX + 10) {
                 gameOver();
                 return;
             }
 
-            // Remove old hoops
             if (h.x + h.width < 0) {
                 hoops.splice(i, 1);
             }
