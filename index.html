@@ -7,8 +7,8 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            background-color: #8B4513;
-            font-family: Arial, sans-serif;
+            background-color: #3d2936;
+            font-family: 'Arial Rounded MT Bold', Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -43,28 +43,130 @@
         .score-box .val { font-size: 20px; font-weight: bold; }
         .score-box.all-time .val { color: #2ed573; }
         canvas { display: block; width: 100%; height: 100%; }
+        
+        /* Game Over Overlay Screen (Matching Image) */
         #screenOverlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(40, 30, 40, 0.6);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: white;
             z-index: 20;
+            padding: 20px;
         }
-        #screenOverlay h1 { font-size: 28px; margin-bottom: 15px; text-align: center; }
-        #screenOverlay button {
-            background-color: #ff4757;
+        
+        /* Main Pop-up Card */
+        .game-over-card {
+            background-color: #a37c74;
+            border-radius: 35px;
+            width: 90%;
+            padding: 25px 20px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            border: 4px solid #85615a;
+            position: relative;
+            margin-bottom: 25px;
+        }
+        .game-over-card h1 {
+            color: #ffffff;
+            font-size: 32px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+        .current-score-section {
+            margin-bottom: 25px;
+        }
+        .current-score-section .score-lbl {
+            color: #f7a379;
+            font-size: 26px;
+            font-weight: bold;
+        }
+        .current-score-section .score-num {
+            color: #ffffff;
+            font-size: 64px;
+            font-weight: bold;
+            line-height: 1;
+        }
+        
+        /* Leaderboard Style */
+        .leaderboard-box {
+            background-color: #fff1df;
+            border-radius: 20px;
+            padding: 15px 12px;
+            margin-top: 15px;
+            border: 3px solid #edd3be;
+        }
+        .leaderboard-box .mode-title {
+            color: #ff5252;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+        .score-row {
+            background-color: #8a645d;
+            color: white;
+            border-radius: 12px;
+            padding: 8px 15px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 15px;
+            font-weight: bold;
+        }
+        .score-row:last-child { margin-bottom: 0; }
+        .score-row .left-side {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .score-row.today { color: #ffd32c; }
+        .score-row.week { color: #ff9ff3; }
+        .score-row.alltime { color: #1dd1a1; }
+        
+        /* Bottom Control Buttons */
+        .button-container {
+            display: flex;
+            width: 90%;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+        }
+        .home-btn {
+            background-color: #d96e62;
+            border: none;
+            border-radius: 15px;
+            width: 65px;
+            height: 60px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 5px 0 #b05349;
+        }
+        .home-btn svg { fill: white; width: 28px; height: 28px; }
+        .play-again-btn {
+            background-color: #2ed573;
             color: white;
             border: none;
-            padding: 12px 30px;
-            font-size: 18px;
+            border-radius: 15px;
+            flex-grow: 1;
+            height: 60px;
+            font-size: 22px;
             font-weight: bold;
-            border-radius: 25px;
             cursor: pointer;
+            box-shadow: 0 5px 0 #26af5f;
+            text-transform: uppercase;
         }
+        .home-btn:active, .play-again-btn:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
         #bonusText {
             position: absolute;
             color: #ffd700;
@@ -92,9 +194,40 @@
     </div>
     <div id="bonusText">2X PERFECT!</div>
     <canvas id="gameCanvas"></canvas>
+    
     <div id="screenOverlay">
-        <h1 id="screenTitle">FLAPPY BASKETBALL</h1>
-        <button id="actionBtn" onclick="startGame()">TAP TO PLAY</button>
+        <div class="game-over-card">
+            <h1 id="screenTitle">GAME OVER</h1>
+            
+            <div class="current-score-section">
+                <div class="score-lbl">Score</div>
+                <div id="finalScore" class="score-num">0</div>
+            </div>
+
+            <div class="leaderboard-box">
+                <div class="mode-title">HARD MODE</div>
+                
+                <div class="score-row today">
+                    <div class="left-side">🏆 Today's best</div>
+                    <div id="todayBestVal">0</div>
+                </div>
+                <div class="score-row week">
+                    <div class="left-side">🏆 Week's best</div>
+                    <div id="weekBestVal">0</div>
+                </div>
+                <div class="score-row alltime">
+                    <div class="left-side">🏆 All-time best</div>
+                    <div id="allTimeBestVal">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="button-container">
+            <button class="home-btn" onclick="resetLeaderboard()">
+                <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            </button>
+            <button class="play-again-btn" onclick="startGame()">PLAY AGAIN</button>
+        </div>
     </div>
 </div>
 
@@ -104,8 +237,11 @@
     const scoreEl = document.getElementById('currentScore');
     const highScoreEl = document.getElementById('highScore');
     const overlay = document.getElementById('screenOverlay');
-    const screenTitle = document.getElementById('screenTitle');
-    const actionBtn = document.getElementById('actionBtn');
+    const finalScoreEl = document.getElementById('finalScore');
+    
+    const todayBestEl = document.getElementById('todayBestVal');
+    const weekBestEl = document.getElementById('weekBestVal');
+    const allTimeBestEl = document.getElementById('allTimeBestVal');
     const bonusText = document.getElementById('bonusText');
 
     function resizeCanvas() {
@@ -115,9 +251,11 @@
     resizeCanvas();
 
     let ball, hoops, score, gameRunning, gameLoopId;
-    let highScore = localStorage.getItem('flappy_highScore') || 0;
-    const gravity = 0.38;
-    const jumpForce = -7.2;
+    
+    // Scores storage setup
+    let highScore = localStorage.getItem('fd_alltime') || 0;
+    let todayBest = localStorage.getItem('fd_today') || 0;
+    let weekBest = localStorage.getItem('fd_week') || 0;
 
     highScoreEl.innerText = highScore;
 
@@ -151,13 +289,12 @@
             }
             ctx.fill(); ctx.stroke();
 
-            // Basketball Body
+            // Basketball
             ctx.fillStyle = "#e67e22";
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
             ctx.fill(); ctx.stroke();
             
-            // Real Ball Texture Lines
             ctx.lineWidth = 1.5;
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.radius, -Math.PI/4, Math.PI * 0.75);
@@ -168,13 +305,13 @@
             ctx.stroke();
         }
         update() {
-            this.velocity += gravity;
+            this.velocity += 0.38; // gravity
             this.y += this.velocity;
             if (this.y + this.radius > canvas.height || this.y - this.radius < 0) {
                 gameOver();
             }
         }
-        flap() { this.velocity = jumpForce; }
+        flap() { this.velocity = -7.2; }
     }
 
     class Hoop {
@@ -188,32 +325,20 @@
             this.touchedRim = false; 
         }
         drawNet() {
-            // Drawing the net underneath the hoop
             ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
             ctx.lineWidth = 2;
             ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
-            
             ctx.beginPath();
             ctx.moveTo(this.x, this.y);
             ctx.lineTo(this.x + 15, this.y + 35);
             ctx.lineTo(this.x + this.width - 15, this.y + 35);
             ctx.lineTo(this.x + this.width, this.y);
             ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-
-            // Net criss-cross pattern lines
-            ctx.beginPath();
-            ctx.moveTo(this.x + 20, this.y); ctx.lineTo(this.x + this.width - 20, this.y + 35);
-            ctx.moveTo(this.x + 45, this.y); ctx.lineTo(this.x + this.width - 35, this.y + 35);
-            ctx.moveTo(this.x + this.width - 20, this.y); ctx.lineTo(this.x + 20, this.y + 35);
-            ctx.moveTo(this.x + this.width - 45, this.y); ctx.lineTo(this.x + 35, this.y + 35);
-            ctx.stroke();
+            ctx.fill(); ctx.stroke();
         }
         drawRim() {
-            // Original Oval Red Rim 
             ctx.lineWidth = 6;
-            ctx.strokeStyle = "#ff4757"; // Original Red
+            ctx.strokeStyle = "#ff4757";
             ctx.beginPath();
             ctx.ellipse(this.x + this.width/2, this.y, this.width/2, this.height/2, 0, 0, Math.PI * 2);
             ctx.stroke();
@@ -242,16 +367,42 @@
     function gameOver() {
         gameRunning = false;
         cancelAnimationFrame(gameLoopId);
-        screenTitle.innerText = "GAME OVER";
-        actionBtn.innerText = "PLAY AGAIN";
+        
+        finalScoreEl.innerText = score;
+
+        // Highscore update logic
+        if (score > todayBest) { todayBest = score; localStorage.setItem('fd_today', todayBest); }
+        if (score > weekBest) { weekBest = score; localStorage.setItem('fd_week', weekBest); }
+        if (score > highScore) { 
+            highScore = score; 
+            localStorage.setItem('fd_alltime', highScore); 
+            highScoreEl.innerText = highScore;
+        }
+
+        // Leaderboard labels refresh
+        todayBestEl.innerText = todayBest;
+        weekBestEl.innerText = weekBest;
+        allTimeBestEl.innerText = highScore;
+
         overlay.style.display = 'flex';
+    }
+
+    function resetLeaderboard() {
+        // Home button clicked: clears scores for a fresh start
+        localStorage.setItem('fd_today', 0);
+        localStorage.setItem('fd_week', 0);
+        localStorage.setItem('fd_alltime', 0);
+        todayBest = 0; weekBest = 0; highScore = 0;
+        highScoreEl.innerText = 0;
+        alert("Scores Reset Successfully!");
+        startGame();
     }
 
     function gameLoop() {
         if (!gameRunning) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Simple Background Design
+        // Simple Background
         ctx.fillStyle = "#d1c9b0";
         ctx.beginPath();
         ctx.moveTo(0, canvas.height);
@@ -263,68 +414,45 @@
             hoops.push(new Hoop());
         }
 
-        // Draw Net first so ball passes *over* or *in front* of it
-        for (let i = 0; i < hoops.length; i++) {
-            hoops[i].drawNet();
-        }
+        for (let i = 0; i < hoops.length; i++) hoops[i].drawNet();
 
         for (let i = hoops.length - 1; i >= 0; i--) {
             let h = hoops[i];
             h.update();
-            h.drawRim(); // Rim stays visible on top
+            h.drawRim();
 
             let leftRimX = h.x;
             let rightRimX = h.x + h.width;
 
-            // 1. RIM TOUCH DETECTION 
-            let distToLeftRim = Math.hypot(ball.x - leftRimX, ball.y - h.y);
-            let distToRightRim = Math.hypot(ball.x - rightRimX, ball.y - h.y);
-            
-            if (distToLeftRim < ball.radius + 3 || distToRightRim < ball.radius + 3) {
+            // Rim collision
+            if (Math.hypot(ball.x - leftRimX, ball.y - h.y) < ball.radius + 3 || Math.hypot(ball.x - rightRimX, ball.y - h.y) < ball.radius + 3) {
                 h.touchedRim = true;
             }
 
-            // 2. WRONG ENTRY DETECTION (Niche se cross karne par OUT)
+            // Down to Top Entry -> Out
             if (!h.passed && ball.x > leftRimX && ball.x < rightRimX) {
                 if (ball.y > h.y && ball.velocity < 0 && Math.abs(ball.y - h.y) < ball.radius + 5) {
-                    gameOver();
-                    return;
+                    gameOver(); return;
                 }
             }
 
-            // 3. SUCCESSFUL TOP-TO-BOTTOM DUNK DETECTION
+            // Top to Down Score Dunk
             if (!h.passed && ball.x > leftRimX && ball.x < rightRimX) {
                 if (ball.y >= h.y && (ball.y - ball.velocity) < h.y) {
                     h.passed = true;
-                    
                     let hoopCenter = h.x + h.width / 2;
-                    let distanceFromCenter = Math.abs(ball.x - hoopCenter);
-
-                    if (!h.touchedRim && distanceFromCenter < 15) {
+                    if (!h.touchedRim && Math.abs(ball.x - hoopCenter) < 15) {
                         score += 2;
                         showBonusEffect(ball.x, ball.y);
                     } else {
                         score += 1;
                     }
-
                     scoreEl.innerText = score;
-                    if (score > highScore) {
-                        highScore = score;
-                        highScoreEl.innerText = highScore;
-                        localStorage.setItem('flappy_highScore', highScore);
-                    }
                 }
             }
 
-            // Missed Hoop check
-            if (!h.passed && ball.x > rightRimX + 10) {
-                gameOver();
-                return;
-            }
-
-            if (h.x + h.width < 0) {
-                hoops.splice(i, 1);
-            }
+            if (!h.passed && ball.x > rightRimX + 10) { gameOver(); return; }
+            if (h.x + h.width < 0) hoops.splice(i, 1);
         }
 
         ball.update();
@@ -336,6 +464,11 @@
     canvas.addEventListener('touchstart', (e) => { if (gameRunning) { ball.flap(); e.preventDefault(); } }, { passive: false });
     canvas.addEventListener('mousedown', () => { if (gameRunning) ball.flap(); });
     window.addEventListener('resize', resizeCanvas);
+    
+    // Auto load first play screen overlay elements
+    todayBestEl.innerText = todayBest;
+    weekBestEl.innerText = weekBest;
+    allTimeBestEl.innerText = highScore;
 </script>
 </body>
 </html>
