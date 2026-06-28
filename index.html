@@ -60,7 +60,7 @@
         .score-box .label { font-size: 9px; color: #aaa; font-weight: bold; text-transform: uppercase; }
         .score-box .val { font-size: 20px; font-weight: bold; }
         
-        /* Master Audio Toggles Fixed Layer */
+        /* Master Audio Toggles */
         .audio-cluster {
             position: absolute;
             top: 25px;
@@ -134,16 +134,10 @@
             position: relative;
             border: 5px solid #000;
         }
-        .emoji-face.easy-face { background-color: #2ecc71; }
-        .emoji-face.medium-face { background-color: #f1c40f; }
-        .emoji-face.hard-face { background-color: #e74c3c; }
+        .easy-face { background-color: #2ecc71; }
+        .medium-face { background-color: #f1c40f; }
+        .hard-face { background-color: #e74c3c; }
         
-        .emoji-face.hard-face::before, .emoji-face.hard-face::after {
-            content: ''; position: absolute; top: -10px; width: 18px; height: 18px; background: #000; border-radius: 50%;
-        }
-        .emoji-face.hard-face::before { left: -4px; }
-        .emoji-face.hard-face::after { right: -4px; }
-
         .mode-title-text { font-size: 38px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
         
         /* Functional Stepper Control */
@@ -233,7 +227,8 @@
 
     <div id="gameHUD" class="top-bar">
         <div class="score-box"><div id="hudModeName" class="label">EASY</div><div id="currentScore" class="val">0</div></div>
-        <div></div> <div class="score-box"><div class="label">ALL TIME</div><div id="highScore" class="val">0</div></div>
+        <div></div> 
+        <div class="score-box"><div class="label">ALL TIME</div><div id="highScore" class="val">0</div></div>
     </div>
 
     <div id="bonusSplash">2X SWISH!</div>
@@ -305,10 +300,11 @@
     const playBtn = document.getElementById('playBtn');
 
     let currentModeIndex = 0; 
+    // HARDER GAMEPLAY BALANCING: Speed aur gaps ko tight kar diya hai level high karne ke liye
     const modes = [
-        { name: "EASY", color: "#2ecc71", fill: "0%", speed: 2.1, gap: 270, box: "#27ae60" },
-        { name: "MEDIUM", color: "#f1c40f", fill: "50%", speed: 2.8, gap: 230, box: "#d4ac0d" },
-        { name: "HARD", color: "#e74c3c", fill: "100%", speed: 3.6, gap: 190, box: "#c0392b" }
+        { name: "EASY", color: "#2ecc71", fill: "0%", speed: 3.2, gap: 240, box: "#27ae60" },
+        { name: "MEDIUM", color: "#f1c40f", fill: "50%", speed: 4.2, gap: 200, box: "#d4ac0d" },
+        { name: "HARD", color: "#e74c3c", fill: "100%", speed: 5.5, gap: 170, box: "#c0392b" }
     ];
 
     let musicEnabled = true;
@@ -342,19 +338,16 @@
         if(sfxEnabled) playBeep(550, 'sine', 0.05);
     }
 
-    // Custom Synthesized Smooth Background Music Loop
     function startSmoothBGM() {
         if(!musicEnabled) return;
-        
-        let bufferSize = audioCtx.sampleRate * 4; // 4 Seconds continuous pattern
+        let bufferSize = audioCtx.sampleRate * 4; 
         let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
         let data = buffer.getChannelData(0);
         
-        // Mathematical Chill Retro Synth Wave Generation
         for (let i = 0; i < bufferSize; i++) {
             let t = i / audioCtx.sampleRate;
-            let note = Math.sin(2 * Math.PI * 130.81 * t) * 0.4; // C3 Base Note
-            if ((t % 0.5) < 0.12) note += Math.sin(2 * Math.PI * 261.63 * t) * 0.25; // Melodic beat arpeggio
+            let note = Math.sin(2 * Math.PI * 130.81 * t) * 0.4; 
+            if ((t % 0.5) < 0.12) note += Math.sin(2 * Math.PI * 261.63 * t) * 0.25; 
             data[i] = note * (1 - (i % (audioCtx.sampleRate / 2)) / (audioCtx.sampleRate / 2)); 
         }
 
@@ -368,7 +361,6 @@
         source.connect(gainNode);
         gainNode.connect(audioCtx.destination);
         source.start();
-        
         bgmNode = gainNode;
     }
 
@@ -458,13 +450,14 @@
             ctx.beginPath(); ctx.moveTo(this.x - this.radius, this.y); ctx.lineTo(this.x + this.radius, this.y); ctx.stroke();
         }
         update() {
-            this.velocity += 0.38; this.y += this.velocity;
+            this.velocity += 0.45; // Increased physics gravity for high challenge 
+            this.y += this.velocity;
             if (this.y + this.radius > canvas.height || this.y - this.radius < 0) {
                 triggerCross(canvas.width / 2, canvas.height / 2);
             }
         }
         flap() {
-            this.velocity = -7.0;
+            this.velocity = -7.5;
             playBeep(330, 'sine', 0.05);
         }
     }
@@ -473,42 +466,36 @@
         constructor() {
             this.x = canvas.width + 60;
             this.y = Math.random() * (canvas.height * 0.45) + (canvas.height * 0.22);
-            this.width = 95; this.height = 22; 
+            this.width = 90; this.height = 20; 
             this.speed = modes[currentModeIndex].speed;
             this.passed = false;
             this.touchedRim = false;
-            this.hasShield = false;
         }
         drawRim() {
-            ctx.lineWidth = 7; ctx.strokeStyle = "#1a1a1a";
+            // Premium Cyan/Blue Gradient Rings Custom Draw Implementation
+            ctx.lineWidth = 7; ctx.strokeStyle = "#002b47";
             ctx.beginPath(); ctx.ellipse(this.x + this.width/2, this.y, this.width/2, this.height/2, 0, 0, Math.PI * 2); ctx.stroke();
 
             let grad = ctx.createLinearGradient(this.x, this.y - this.height/2, this.x, this.y + this.height/2);
-            grad.addColorStop(0, "#ff5252"); grad.addColorStop(1, "#b31b27");
+            grad.addColorStop(0, "#00d2ff"); grad.addColorStop(1, "#0066ff");
             ctx.fillStyle = grad; ctx.beginPath();
             ctx.ellipse(this.x + this.width/2, this.y, this.width/2, this.height/2, 0, 0, Math.PI * 2); ctx.fill();
 
-            ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
-            ctx.beginPath(); ctx.ellipse(this.x + this.width/2, this.y - 3, this.width/2.2, this.height/4, 0, Math.PI, Math.PI * 2); ctx.stroke();
-
-            if (this.hasShield) {
-                ctx.save();
-                ctx.lineWidth = 4; ctx.strokeStyle = "rgba(0, 255, 240, 0.8)";
-                ctx.shadowBlur = 10; ctx.shadowColor = "#00fff0";
-                ctx.beginPath();
-                ctx.arc(this.x + this.width/2, this.y + 6, this.width/2 + 5, 0, Math.PI);
-                ctx.stroke();
-                ctx.restore();
-            }
+            ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+            ctx.beginPath(); ctx.ellipse(this.x + this.width/2, this.y - 2, this.width/2.2, this.height/4, 0, Math.PI, Math.PI * 2); ctx.stroke();
         }
     }
 
-    function createGlowTrail(x, y) {
-        for(let i=0; i<2; i++) {
+    // Golden Trails Generator Engine
+    function createGoldenTrail(x, y) {
+        for(let i=0; i<3; i++) {
             particles.push({
-                x: x, y: y + (Math.random() * 10 - 5),
-                size: Math.random() * 6 + 3,
-                alpha: 1, speedX: -(Math.random() * 1.5 + 0.5)
+                x: x + (Math.random() * 6 - 3), 
+                y: y + (Math.random() * 8 - 4),
+                size: Math.random() * 5 + 2,
+                alpha: 1, 
+                speedX: -(Math.random() * 2 + 1),
+                speedY: (Math.random() * 1 - 0.5)
             });
         }
     }
@@ -583,37 +570,25 @@
         ctx.fillStyle = "#d1c9b0"; ctx.beginPath(); ctx.moveTo(0, canvas.height); ctx.lineTo(canvas.width * 0.5, canvas.height * 0.75); ctx.lineTo(canvas.width, canvas.height); ctx.fill();
 
         if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - modes[currentModeIndex].gap) {
-            let nH = new Hoop();
-            if([12, 24, 34, 56, 89].includes(score)) nH.hasShield = true;
-            hoops.push(nH);
+            hoops.push(new Hoop());
         }
 
+        // Render Shiny Golden Trails on Screen
         for (let i = particles.length - 1; i >= 0; i--) {
-            let p = particles[i]; p.x += p.speedX; p.alpha -= 0.02;
+            let p = particles[i]; p.x += p.speedX; p.y += p.speedY; p.alpha -= 0.03;
             if(p.alpha <= 0) { particles.splice(i, 1); continue; }
-            ctx.fillStyle = `rgba(255, 215, 0, ${p.alpha})`;
+            ctx.fillStyle = `rgba(255, 215, 0, ${p.alpha})`; // Real Golden Color Code Mapping
+            ctx.shadowBlur = 6; ctx.shadowColor = "#ffd700";
             ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0; // Reset canvas context state
         }
 
         for (let i = hoops.length - 1; i >= 0; i--) {
             let h = hoops[i]; h.x -= h.speed;
             
-            createGlowTrail(h.x + h.width, h.y);
-            createGlowTrail(h.x, h.y);
-
             h.drawRim();
 
             let rLeft = h.x + 6; let rRight = h.x + h.width - 6;
-
-            if (h.hasShield) {
-                let distToCenter = Math.hypot(ball.x - (h.x + h.width/2), ball.y - h.y);
-                if (distToCenter < ball.radius + h.width/2) {
-                    h.hasShield = false; 
-                    ball.velocity = -5; 
-                    playBeep(600, 'triangle', 0.25);
-                    continue;
-                }
-            }
 
             let dLeft = Math.hypot(ball.x - h.x, ball.y - h.y);
             let dRight = Math.hypot(ball.x - (h.x + h.width), ball.y - h.y);
@@ -630,6 +605,11 @@
             if (!h.passed && ball.x > rLeft && ball.x < rRight) {
                 if (ball.y >= h.y && (ball.y - ball.velocity) < h.y) {
                     h.passed = true;
+                    // Trigger Golden Trails around the Ring on Successful Dunk!
+                    for(let k = 0; k < 15; k++) {
+                        createGoldenTrail(h.x + (Math.random() * h.width), h.y);
+                    }
+                    
                     if (!h.touchedRim) {
                         swishStreak++;
                         let mult = swishStreak + 1;
@@ -652,12 +632,9 @@
         gameLoopId = requestAnimationFrame(gameLoop);
     }
 
-    // Direct Window Input Listeners Mapping
     window.addEventListener('keydown', (e) => { if(e.code === 'Space' && gameRunning) ball.flap(); });
     
-    // Core Global Container Click handler for unified tap tracking
     document.getElementById('gameContainer').addEventListener('mousedown', (e) => {
-        // Prevent action mapping if user clicked interactive system layers
         if (e.target.closest('#menuOverlay') || e.target.closest('#screenOverlay') || e.target.closest('.audio-cluster')) return;
         if (gameRunning) ball.flap();
     });
