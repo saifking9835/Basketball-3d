@@ -85,7 +85,7 @@
             border-color: #e74c3c;
         }
         
-        /* MAIN MENU OVERLAY - Cleaned from all audio triggers */
+        /* MAIN MENU OVERLAY */
         #menuOverlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -322,7 +322,7 @@
         musicEnabled = !musicEnabled;
         document.getElementById('musicBtn').classList.toggle('muted', !musicEnabled);
         if(bgmNode) {
-            bgmNode.gain.value = (musicEnabled && gameRunning) ? 0.08 : 0;
+            bgmNode.gain.setValueAtTime((musicEnabled && gameRunning) ? 0.25 : 0, audioCtx.currentTime);
         } else if(musicEnabled && gameRunning) {
             initAudio();
         }
@@ -356,7 +356,8 @@
         source.loop = true;
 
         let gainNode = audioCtx.createGain();
-        gainNode.gain.setValueAtTime((musicEnabled && gameRunning) ? 0.08 : 0, audioCtx.currentTime);
+        // Boosted base volume from 0.08 to 0.25
+        gainNode.gain.setValueAtTime((musicEnabled && gameRunning) ? 0.25 : 0, audioCtx.currentTime);
         
         source.connect(gainNode);
         gainNode.connect(audioCtx.destination);
@@ -377,7 +378,8 @@
             let osc = audioCtx.createOscillator();
             let gain = audioCtx.createGain();
             osc.type = type; osc.frequency.value = freq;
-            gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+            // Boosted SFX volume from 0.12 to 0.35
+            gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.start(); osc.stop(audioCtx.currentTime + duration);
@@ -514,9 +516,8 @@
         document.getElementById('hudModeName').innerText = modes[currentModeIndex].name;
         gameRunning = true;
 
-        // Audio executes smoothly strictly when game is active now
         initAudio(); 
-        if(bgmNode && musicEnabled) bgmNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        if(bgmNode && musicEnabled) bgmNode.gain.setValueAtTime(0.25, audioCtx.currentTime);
 
         if(gameLoopId) cancelAnimationFrame(gameLoopId);
         gameLoop();
@@ -525,13 +526,13 @@
     function triggerCross(x, y) {
         gameRunning = false; showCross = true; crossX = x; crossY = y;
         
-        // Mute sound assets instantly upon failure loop
         stopBGM();
         try {
             let osc = audioCtx.createOscillator();
             let gain = audioCtx.createGain();
             osc.type = 'sawtooth'; osc.frequency.value = 180;
-            gain.gain.setValueAtTime(sfxEnabled ? 0.12 : 0, audioCtx.currentTime);
+            // Boosted crash SFX volume to 0.35
+            gain.gain.setValueAtTime(sfxEnabled ? 0.35 : 0, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.start(); osc.stop(audioCtx.currentTime + 0.4);
