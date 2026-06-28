@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Basketball Game</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #8B4513;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            height: 100vh;
+            background: linear-gradient(to bottom, #e5e0cc, #c9c1a9);
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        /* Top Bar Info */
+        .top-bar {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            z-index: 10;
+        }
+        .score-box {
+            background-color: #2b1d16;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 100px;
+        }
+        .score-box .label {
+            font-size: 10px;
+            text-transform: uppercase;
+            font-weight: bold;
+            color: #aaa;
+        }
+        .score-box .val {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .score-box.all-time .val {
+            color: #2ed573;
+        }
+        /* Game Canvas */
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        /* Start / Game Over Screen */
+        #screenOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 20;
+        }
+        #screenOverlay h1 {
+            font-size: 28px;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+        }
+        #screenOverlay button {
+            background-color: #ff4757;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: 0.2s;
+        }
+        #screenOverlay button:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+
+<div id="gameContainer">
+    <div class="top-bar">
+        <div class="score-box">
+            <div class="label">SCORE</div>
+            <div id="currentScore" class="val">0</div>
+        </div>
+        <div class="score-box all-time">
+            <div class="label">ALL TIME</div>
+            <div id="highScore" class="val">0</div>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="screenOverlay">
+        <h1 id="screenTitle">FLAPPY BASKETBALL</h1>
+        <button id="actionBtn" onclick="startGame()">TAP TO PLAY</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('currentScore');
+    const highScoreEl = document.getElementById('highScore');
+    const overlay = document.getElementById('screenOverlay');
+    const screenTitle = document.getElementById('screenTitle');
+    const actionBtn = document.getElementById('actionBtn');
+
+    // Canvas size fix
+    function resizeCanvas() {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+    }
+    resizeCanvas();
+
+    // Game Variables
+    let ball;
+    let hoops = [];
+    let score = 0;
+    let highScore = localStorage.getItem('flappy_highScore') || 0;
+    let gameRunning = false;
+    let gravity = 0.35;
+    let jumpForce = -7.5;
+    let gameLoopId;
+
+    highScoreEl.innerText = highScore;
+
+    // Ball Object Class
+    class Ball {
+        constructor() {
+            this.x = canvas.width * 0.25;
+            this.y = canvas.height / 2;
+            this.radius = 16;
+            this.velocity = 0;
+            this.wingWingUp = true;
+            this.wingTimer = 0;
+        }
+
+        draw() {
+            // Draw Wings
+            ctx.fillStyle = "#ffffff";
+            ctx.strokeStyle = "#000000";
+            ctx.lineWidth = 2;
+            
+            ctx.beginPath();
+            if (this.velocity < 0) { // Wing flap action
+                ctx.ellipse(this.x - 18, this.y - 5, 12, 6, -Math.PI/6, 0, Math.PI * 2);
+            } else {
+                ctx.ellipse(this.x - 18, this.y, 12, 6, Math.PI/6, 0, Math.PI * 2);
+            }
+            ctx.fill();
+            ctx.stroke();
+
+            // Draw Basketball
+            ctx.fillStyle = "#e67e22"; // Orange
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Basketball Lines
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, -Math.PI/4, Math.PI * 0.75);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(this.x - this.radius, this.y);
+            ctx.lineTo(this.x + this.radius, this.y);
+            ctx.stroke();
+        }
+
+        update() {
+            this.velocity += gravity;
+            this.y += this.velocity;
+
+            // Bottom border collision
+            if (this.y + this.radius > canvas.height) {
+                gameOver();
+            }
+            // Top border limit
+            if (this.y - this.radius < 0) {
+                this.y = this.radius;
+                this.velocity = 0;
+            }
+        }
+
+        flap() {
+            this.velocity = jumpForce;
+        }
+    }
+
+    // Hoop Object Class
+    class Hoop {
+        constructor() {
+            this.x = canvas.width + 50;
+            this.y = Math.random() * (canvas.height * 0.5) + (canvas.height * 0.25);
+            this.width = 70;
+            this.height = 12;
+            this.speed = 2.5;
+            this.passed = false;
+        }
+
+        draw() {
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = "#ff4757"; // Red hoop color
+            
+            // Hoop Ellipse Ring
+            ctx.beginPath();
+            ctx.ellipse(this.x + this.width/2, this.y, this.width/2, this.height/2, 0, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        update() {
+            this.x -= this.speed;
+        }
+
+        checkCollision(ball) {
+            // Ball passes through the ring check
+            if (!this.passed && ball.x > this.x && ball.x < this.x + this.width) {
+                // Agar ball ring ke level me hai aur center se guzar rahi hai
+                if (Math.abs(ball.y - this.y) < 15) {
+                    this.passed = true;
+                    score++;
+                    scoreEl.innerText = score;
+                    if (score > highScore) {
+                        highScore = score;
+                        highScoreEl.innerText = highScore;
+                        localStorage.setItem('flappy_highScore', highScore);
+                    }
+                }
+            }
+
+            // Missed Hoop check (If ball goes past without scoring)
+            if (!this.passed && ball.x > this.x + this.width + 10) {
+                gameOver();
+            }
+        }
+    }
+
+    // Start Game Function
+    function startGame() {
+        overlay.style.display = 'none';
+        ball = new Ball();
+        hoops = [];
+        score = 0;
+        scoreEl.innerText = score;
+        gameRunning = true;
+        
+        // Spawn first hoop
+        hoops.push(new Hoop());
+        
+        if(gameLoopId) cancelAnimationFrame(gameLoopId);
+        gameLoop();
+    }
+
+    // Game Over Function
+    function gameOver() {
+        gameRunning = false;
+        cancelAnimationFrame(gameLoopId);
+        screenTitle.innerText = "GAME OVER";
+        actionBtn.innerText = "PLAY AGAIN";
+        overlay.style.display = 'flex';
+    }
+
+    // Main Game Loop
+    function gameLoop() {
+        if (!gameRunning) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Background Decorative Mountains/Clouds (Simple)
+        ctx.fillStyle = "#d1c9b0";
+        ctx.beginPath();
+        ctx.moveTo(0, canvas.height);
+        ctx.lineTo(canvas.width * 0.4, canvas.height * 0.7);
+        ctx.lineTo(canvas.width * 0.8, canvas.height);
+        ctx.fill();
+
+        // Handle Hoops
+        if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - 220) {
+            hoops.push(new Hoop());
+        }
+
+        for (let i = hoops.length - 1; i >= 0; i--) {
+            hoops[i].update();
+            hoops[i].draw();
+            hoops[i].checkCollision(ball);
+
+            // Screen se bahar jane par delete karein
+            if (hoops[i].x + hoops[i].width < 0) {
+                hoops.splice(i, 1);
+            }
+        }
+
+        // Handle Ball
+        ball.update();
+        ball.draw();
+
+        gameLoopId = requestAnimationFrame(gameLoop);
+    }
+
+    // Controls: Tap or Click anywhere to Jump
+    window.addEventListener('keydown', function(e) {
+        if (e.code === 'Space' && gameRunning) {
+            ball.flap();
+        }
+    });
+
+    canvas.addEventListener('touchstart', function(e) {
+        if (gameRunning) {
+            ball.flap();
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    canvas.addEventListener('mousedown', function(e) {
+        if (gameRunning) {
+            ball.flap();
+        }
+    });
+
+    // Resize dynamic handler
+    window.addEventListener('resize', resizeCanvas);
+</script>
+
+</body>
+</html>
