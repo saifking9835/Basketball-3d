@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flappy Jump - Multi Mode</title>
+    <title>Flappy Jump - Pro Arcade Edition</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -25,15 +25,16 @@
             overflow: hidden;
         }
         
-        /* Top HUD Bar */
+        /* Top HUD Controls */
         .top-bar {
             position: absolute;
             top: 20px;
             width: 100%;
             display: flex;
             justify-content: space-around;
+            align-items: center;
             z-index: 10;
-            display: none; /* Game start hone par hi dikhega */
+            display: none;
         }
         .score-box {
             background-color: #2b1d16;
@@ -41,14 +42,43 @@
             padding: 5px 15px;
             border-radius: 8px;
             text-align: center;
-            min-width: 110px;
+            min-width: 105px;
         }
-        .score-box .label { font-size: 10px; color: #aaa; font-weight: bold; text-transform: uppercase; }
+        .score-box .label { font-size: 10px; color: #aaa; font-weight: bold; }
         .score-box .val { font-size: 20px; font-weight: bold; }
-        .score-box.all-time .val { color: #ffd32c; }
+        
+        /* Sound Controller Bar */
+        .audio-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 15;
+            display: none;
+        }
+        .audio-btn {
+            width: 40px;
+            height: 40px;
+            background-color: #2b1d16;
+            border: 2px solid #5a4033;
+            border-radius: 50%;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 0 #110906;
+        }
+        .audio-btn.muted {
+            background-color: #c0392b;
+            border-color: #e74c3c;
+        }
+        
         canvas { display: block; width: 100%; height: 100%; }
 
-        /* START MENU SCREEN STYLE (Matches 1000001987.jpg) */
+        /* Menu Panel Configurations */
         #menuOverlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -58,187 +88,125 @@
             align-items: center;
             justify-content: space-between;
             z-index: 30;
-            padding: 40px 20px 5px 20px;
-            text-align: center;
+            padding: 40px 20px;
         }
-        .menu-header h1 {
-            color: white;
-            font-size: 34px;
-            letter-spacing: 1px;
-            text-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            margin-bottom: 8px;
-        }
-        .menu-header p {
-            color: #fff1e0;
-            font-size: 15px;
-            padding: 0 25px;
-            line-height: 1.4;
-        }
+        .menu-header h1 { color: white; font-size: 34px; text-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .menu-header p { color: #fff1e0; font-size: 14px; margin-top: 5px; }
         
-        /* Interactive Mode Selector Area */
         .mode-panel {
             background-color: #fff9f2;
             width: 100%;
-            border-radius: 40px 40px 0 0;
-            flex-grow: 1;
-            margin-top: 40px;
+            border-radius: 40px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
             padding: 30px 20px;
-            gap: 25px;
+            gap: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
         }
-        
-        /* Dynamic Avatar Layout */
         .avatar-container {
-            width: 105px;
-            height: 105px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
-            background-color: white;
+            background: white;
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 6px 0 rgba(0,0,0,0.08);
-            position: relative;
+            box-shadow: 0 5px 0 rgba(0,0,0,0.06);
         }
         .emoji-face {
-            width: 86px;
-            height: 86px;
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
             position: relative;
             border: 5px solid #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: all 0.2s ease;
         }
-        
-        /* Custom CSS Emoji Layouts */
         .emoji-face.easy-face { background-color: #2ecc71; }
         .emoji-face.medium-face { background-color: #f1c40f; }
         .emoji-face.hard-face { background-color: #e74c3c; }
-
+        
         /* Horns for Hard Avatar */
         .emoji-face.hard-face::before, .emoji-face.hard-face::after {
-            content: ''; position: absolute; top: -12px;
-            width: 22px; height: 22px; background-color: #000; border-radius: 50%;
+            content: ''; position: absolute; top: -10px; width: 18px; height: 18px; background: #000; border-radius: 50%;
         }
-        .emoji-face.hard-face::before { left: -5px; }
-        .emoji-face.hard-face::after { right: -5px; }
+        .emoji-face.hard-face::before { left: -4px; }
+        .emoji-face.hard-face::after { right: -4px; }
 
-        .mode-title-text {
-            font-size: 38px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+        .mode-title-text { font-size: 36px; font-weight: 900; text-transform: uppercase; }
         
-        /* Custom Slider Bar Control */
-        .slider-container {
+        /* Segmented Stepper Slider Control */
+        .slider-wrapper {
+            width: 80%;
             position: relative;
-            width: 75%;
-            height: 36px;
+            padding: 10px 0;
+        }
+        .slider-track {
+            width: 100%;
+            height: 24px;
             background-color: #7f8c8d;
-            border-radius: 20px;
-            border: 4px solid white;
+            border-radius: 15px;
+            position: relative;
+            border: 3px solid white;
             cursor: pointer;
         }
-        .slider-handle {
+        .slider-fill {
+            height: 100%;
+            border-radius: 12px;
+            width: 0%;
+            transition: width 0.2s, background-color 0.2s;
+        }
+        .slider-thumb {
             position: absolute;
-            top: -2px;
-            width: 32px;
-            height: 32px;
+            top: -4px;
+            left: 0%;
+            width: 26px;
+            height: 26px;
             border-radius: 50%;
-            background-color: #2ecc71;
-            border: 4px solid white;
-            transition: left 0.15s ease, background-color 0.15s ease;
+            background: white;
+            border: 4px solid #2ecc71;
+            transform: translateX(-50%);
+            transition: left 0.2s, border-color 0.2s;
+            cursor: pointer;
         }
         
-        /* Play Button Trigger */
         .main-play-btn {
-            width: 75%;
-            height: 60px;
-            background-color: #2ecc71;
-            color: white;
-            border: none;
-            border-radius: 18px;
-            font-size: 26px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 6px 0 #27ae60;
+            width: 80%; height: 55px; border: none; border-radius: 18px;
+            font-size: 24px; font-weight: bold; color: white; cursor: pointer;
             text-transform: uppercase;
         }
-        .main-play-btn:active {
-            transform: translateY(4px);
-            box-shadow: none;
-        }
-        
-        /* Leaderboard / Game Over Modal Overlay */
+
+        /* Leaderboard Modal overlay screens */
         #screenOverlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(40, 30, 40, 0.6);
-            display: none; 
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 20;
-            padding: 20px;
+            display: none; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 20; padding: 20px;
         }
         .game-over-card {
-            background-color: #a37c74;
-            border-radius: 35px;
-            width: 90%;
-            padding: 25px 20px;
-            text-align: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-            border: 4px solid #85615a;
-            position: relative;
-            margin-bottom: 25px;
+            background-color: #a37c74; border-radius: 35px; width: 90%;
+            padding: 25px 20px; text-align: center; border: 4px solid #85615a;
         }
-        .game-over-card h1 {
-            color: #ffffff;
-            font-size: 32px;
-            text-transform: uppercase;
-            margin-bottom: 15px;
-        }
-        .current-score-section .score-lbl { color: #f7a379; font-size: 24px; font-weight: bold; }
-        .current-score-section .score-num { color: #ffffff; font-size: 60px; font-weight: bold; }
-        
-        .leaderboard-box {
-            background-color: #fff1df;
-            border-radius: 20px;
-            padding: 15px 12px;
-            margin-top: 15px;
-            border: 3px solid #edd3be;
-        }
-        .leaderboard-box .mode-title { color: #ff5252; font-size: 14px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; }
+        .game-over-card h1 { color: white; font-size: 32px; margin-bottom: 10px; }
+        .score-num { color: white; font-size: 58px; font-weight: bold; }
+        .leaderboard-box { background-color: #fff1df; border-radius: 20px; padding: 15px; margin-top: 15px; }
         .score-row {
             background-color: #8a645d; color: white; border-radius: 12px;
-            padding: 8px 15px; margin-bottom: 8px; display: flex;
-            justify-content: space-between; align-items: center; font-size: 15px; font-weight: bold;
+            padding: 8px 15px; margin-bottom: 6px; display: flex; justify-content: space-between; font-weight: bold;
         }
-        .score-row.today { color: #ffd32c; }
-        .score-row.week { color: #ff9ff3; }
-        .score-row.alltime { color: #1dd1a1; }
-        
-        .button-container { display: flex; width: 90%; gap: 15px; justify-content: center; }
-        .home-btn {
-            background-color: #d96e62; border: none; border-radius: 15px;
-            width: 65px; height: 60px; cursor: pointer; display: flex;
-            justify-content: center; align-items: center; box-shadow: 0 5px 0 #b05349;
-        }
-        .home-btn svg { fill: white; width: 28px; height: 28px; }
-        .play-again-btn {
-            background-color: #2ed573; color: white; border: none; border-radius: 15px;
-            flex-grow: 1; height: 60px; font-size: 22px; font-weight: bold;
-            cursor: pointer; box-shadow: 0 5px 0 #26af5f; text-transform: uppercase;
-        }
+        .button-container { display: flex; width: 90%; gap: 15px; margin-top: 20px; }
+        .home-btn { background-color: #d96e62; border: none; border-radius: 15px; width: 65px; height: 60px; cursor: pointer; display: flex; justify-content: center; align-items: center; box-shadow: 0 5px 0 #b05349;}
+        .play-again-btn { background-color: #2ed573; color: white; border: none; border-radius: 15px; flex-grow: 1; height: 60px; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 5px 0 #26af5f; }
 
-        #bonusText {
-            position: absolute; color: #ffd700; font-weight: bold; font-size: 24px;
-            display: none; text-shadow: 2px 2px 4px #000; z-index: 15; pointer-events: none;
+        #bonusSplash {
+            position: absolute; color: #ffd700; font-weight: bold; font-size: 28px;
+            display: none; text-shadow: 2px 2px 5px #000; z-index: 15; pointer-events: none;
+            animation: bounceIn 0.5s ease-out;
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
         }
     </style>
 </head>
@@ -246,41 +214,44 @@
 
 <div id="gameContainer">
     <div id="gameHUD" class="top-bar">
-        <div class="score-box">
-            <div id="hudModeName" class="label">EASY MODE</div>
-            <div id="currentScore" class="val">0</div>
-        </div>
-        <div class="score-box all-time">
-            <div class="label">ALL TIME</div>
-            <div id="highScore" class="val">0</div>
-        </div>
+        <div class="score-box"><div id="hudModeName" class="label">EASY</div><div id="currentScore" class="val">0</div></div>
+        <div class="score-box"><div class="label">ALL TIME</div><div id="highScore" class="val">0</div></div>
     </div>
     
-    <div id="bonusText">2X PERFECT!</div>
+    <div id="audioControls" class="audio-controls">
+        <button id="musicBtn" class="audio-btn" onclick="toggleMusic()">🎵</button>
+        <button id="sfxBtn" class="audio-btn" onclick="toggleSFX()">🔊</button>
+    </div>
+
+    <div id="bonusSplash">2X SWISH!</div>
     
     <div id="menuOverlay">
         <div class="menu-header">
             <h1>FLAPPY JUMP</h1>
-            <p>Tap to jump and shoot as many baskets as you can.</p>
+            <p>Tap to jump and slam dunk into the rings!</p>
         </div>
         
         <div class="mode-panel">
             <div class="avatar-container">
                 <div id="menuAvatar" class="emoji-face easy-face">
-                    <div style="position:absolute; width:12px; height:12px; background:#000; border-radius:50%; top:24px; left:20px;"></div>
-                    <div style="position:absolute; width:12px; height:12px; background:#000; border-radius:50%; top:24px; right:20px;"></div>
-                    <div id="avatarMouth" style="position:absolute; width:24px; height:12px; border-bottom:4px solid #000; border-radius:0 0 12px 12px; top:44px;"></div>
+                    <div style="position:absolute; width:10px; height:10px; background:#000; border-radius:50%; top:24px; left:18px;"></div>
+                    <div style="position:absolute; width:10px; height:10px; background:#000; border-radius:50%; top:24px; right:18px;"></div>
+                    <div id="avatarMouth" style="position:absolute; width:22px; height:10px; border-bottom:4px solid #000; border-radius:0 0 10px 10px; top:42px; left:24px;"></div>
                 </div>
             </div>
             
             <div id="menuModeTitle" class="mode-title-text" style="color: #2ecc71;">EASY</div>
             
-            <div class="slider-container" onclick="handleSliderClick(event)">
-                <div id="modeSliderHandle" class="slider-handle" style="left: 0%;"></div>
+            <div class="slider-wrapper">
+                <div class="slider-track" onclick="handleSliderClick(event)">
+                    <div id="sliderFill" class="slider-fill" style="width: 0%; background-color: #2ecc71;"></div>
+                    <div id="sliderThumb" class="slider-thumb" style="left: 0%; border-color: #2ecc71;"></div>
+                </div>
             </div>
             
-            <button class="main-play-btn" onclick="launchGame()">PLAY</button>
+            <button id="playBtn" class="main-play-btn" onclick="launchGame()" style="background-color: #2ecc71; box-shadow: 0 5px 0 #27ae60;">PLAY</button>
         </div>
+        <div></div>
     </div>
     
     <canvas id="gameCanvas"></canvas>
@@ -288,30 +259,16 @@
     <div id="screenOverlay">
         <div class="game-over-card">
             <h1>GAME OVER</h1>
-            <div class="current-score-section">
-                <div class="score-lbl">Score</div>
-                <div id="finalScore" class="score-num">0</div>
-            </div>
+            <div><div style="color: #f7a379; font-size:22px; font-weight:bold;">Score</div><div id="finalScore" class="score-num">0</div></div>
             <div class="leaderboard-box">
-                <div id="leaderboardTitle" class="mode-title">EASY MODE</div>
-                <div class="score-row today">
-                    <div class="left-side">🏆 Today's best</div>
-                    <div id="todayBestVal">0</div>
-                </div>
-                <div class="score-row week">
-                    <div class="left-side">🏆 Week's best</div>
-                    <div id="weekBestVal">0</div>
-                </div>
-                <div class="score-row alltime">
-                    <div class="left-side">🏆 All-time best</div>
-                    <div id="allTimeBestVal">0</div>
-                </div>
+                <div id="leaderboardTitle" style="color:#ff5252; font-weight:bold; margin-bottom:10px;">EASY MODE</div>
+                <div class="score-row"><div>🏆 Today's Best</div><div id="todayBestVal">0</div></div>
+                <div class="score-row"><div>🏆 Week's Best</div><div id="weekBestVal">0</div></div>
+                <div class="score-row"><div>🏆 All-Time</div><div id="allTimeBestVal">0</div></div>
             </div>
         </div>
         <div class="button-container">
-            <button class="home-btn" onclick="exitToMenu()">
-                <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-            </button>
+            <button class="home-btn" onclick="exitToMenu()"><span style="color:white; font-size:22px;">🏠</span></button>
             <button class="play-again-btn" onclick="launchGame()">PLAY AGAIN</button>
         </div>
     </div>
@@ -325,27 +282,49 @@
     const screenOverlay = document.getElementById('screenOverlay');
     const menuOverlay = document.getElementById('menuOverlay');
     const gameHUD = document.getElementById('gameHUD');
+    const audioControls = document.getElementById('audioControls');
     const finalScoreEl = document.getElementById('finalScore');
     
-    // Menu Configuration DOMElements
     const menuAvatar = document.getElementById('menuAvatar');
     const menuModeTitle = document.getElementById('menuModeTitle');
-    const modeSliderHandle = document.getElementById('modeSliderHandle');
+    const sliderFill = document.getElementById('sliderFill');
+    const sliderThumb = document.getElementById('sliderThumb');
     const avatarMouth = document.getElementById('avatarMouth');
-    const hudModeName = document.getElementById('hudModeName');
-    const leaderboardTitle = document.getElementById('leaderboardTitle');
+    const playBtn = document.getElementById('playBtn');
 
-    const todayBestEl = document.getElementById('todayBestVal');
-    const weekBestEl = document.getElementById('weekBestVal');
-    const allTimeBestEl = document.getElementById('allTimeBestVal');
-    const bonusText = document.getElementById('bonusText');
-
-    let currentModeIndex = 0; // 0 = Easy, 1 = Medium, 2 = Hard
-    const modesConfig = [
-        { name: "EASY", color: "#2ecc71", sliderLeft: "0%", speed: 2.2, gap: 260, btnBg: "#2ecc71", btnBox: "#27ae60" },
-        { name: "MEDIUM", color: "#f1c40f", sliderLeft: "42%", speed: 2.8, gap: 220, btnBg: "#f1c40f", btnBox: "#d4ac0d" },
-        { name: "HARD", color: "#e74c3c", sliderLeft: "82%", speed: 3.5, gap: 180, btnBg: "#e74c3c", btnBox: "#c0392b" }
+    let currentModeIndex = 0; // 0: Easy, 1: Medium, 2: Hard
+    const modes = [
+        { name: "EASY", color: "#2ecc71", fill: "0%", speed: 2.0, gap: 270, box: "#27ae60" },
+        { name: "MEDIUM", color: "#f1c40f", fill: "50%", speed: 2.7, gap: 230, box: "#d4ac0d" },
+        { name: "HARD", color: "#e74c3c", fill: "100%", speed: 3.5, gap: 190, box: "#c0392b" }
     ];
+
+    let musicEnabled = true;
+    let sfxEnabled = true;
+    let audioCtx = null;
+
+    function toggleMusic() {
+        musicEnabled = !musicEnabled;
+        document.getElementById('musicBtn').classList.toggle('muted', !musicEnabled);
+    }
+    function toggleSFX() {
+        sfxEnabled = !sfxEnabled;
+        document.getElementById('sfxBtn').classList.toggle('muted', !sfxEnabled);
+    }
+
+    // Dynamic Synthesized Web Audio Engine
+    function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    function playBeep(freq, type, duration) {
+        if (!sfxEnabled) return;
+        initAudio();
+        let osc = audioCtx.createOscillator();
+        let gain = audioCtx.createGain();
+        osc.type = type; osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + duration);
+    }
 
     function resizeCanvas() {
         canvas.width = canvas.parentElement.clientWidth;
@@ -353,59 +332,43 @@
     }
     resizeCanvas();
 
-    let ball, hoops, score, gameRunning, gameLoopId;
+    let ball, hoops, particles, score, gameRunning, gameLoopId;
+    let swishStreak = 0; 
     let showCross = false, crossX = 0, crossY = 0;
 
-    // Load Scores depending on Mode type
-    function getScoresForMode(modeName) {
-        return {
-            alltime: localStorage.getItem(`fd_alltime_${modeName}`) || 0,
-            today: localStorage.getItem(`fd_today_${modeName}`) || 0,
-            week: localStorage.getItem(`fd_week_${modeName}`) || 0
-        };
+    function handleSliderClick(e) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const pct = (e.clientX - rect.left) / rect.width;
+        if (pct < 0.33) currentModeIndex = 0;
+        else if (pct < 0.66) currentModeIndex = 1;
+        else currentModeIndex = 2;
+        updateMenuUI();
+        playBeep(400, 'sine', 0.08);
     }
 
     function updateMenuUI() {
-        const config = modesConfig[currentModeIndex];
-        menuModeTitle.innerText = config.name;
-        menuModeTitle.style.color = config.color;
-        modeSliderHandle.style.left = config.sliderLeft;
-        modeSliderHandle.style.backgroundColor = config.color;
-        
-        // Reset dynamic avatar classes
+        const m = modes[currentModeIndex];
+        menuModeTitle.innerText = m.name;
+        menuModeTitle.style.color = m.color;
+        sliderFill.style.width = m.fill;
+        sliderFill.style.backgroundColor = m.color;
+        sliderThumb.style.left = m.fill;
+        sliderThumb.style.borderColor = m.color;
+        playBtn.style.backgroundColor = m.color;
+        playBtn.style.boxShadow = `0 5px 0 ${m.box}`;
+
         menuAvatar.className = "emoji-face";
-        if (currentModeIndex === 0) {
+        if(currentModeIndex === 0) {
             menuAvatar.classList.add("easy-face");
-            avatarMouth.style.borderRadius = "0 0 12px 12px";
-            avatarMouth.style.height = "12px";
-        } else if (currentModeIndex === 1) {
+            avatarMouth.style.borderRadius = "0 0 10px 10px"; avatarMouth.style.height = "10px";
+        } else if(currentModeIndex === 1) {
             menuAvatar.classList.add("medium-face");
-            avatarMouth.style.borderRadius = "0";
-            avatarMouth.style.height = "4px";
+            avatarMouth.style.borderRadius = "0"; avatarMouth.style.height = "3px";
         } else {
             menuAvatar.classList.add("hard-face");
-            avatarMouth.style.borderRadius = "12px 12px 0 0";
-            avatarMouth.style.height = "10px";
+            avatarMouth.style.borderRadius = "10px 10px 0 0"; avatarMouth.style.height = "8px";
         }
-
-        // Update main configuration buttons color sync
-        document.querySelector('.main-play-btn').style.backgroundColor = config.btnBg;
-        document.querySelector('.main-play-btn').style.boxShadow = `0 6px 0 ${config.btnBox}`;
-        
-        let sc = getScoresForMode(config.name);
-        highScoreEl.innerText = sc.alltime;
-    }
-
-    function handleSliderClick(event) {
-        const rect = event.currentTarget.getBoundingClientRect();
-        const clickX = event.clientX - rect.left;
-        const relativeX = clickX / rect.width;
-
-        if (relativeX < 0.33) currentModeIndex = 0;
-        else if (relativeX < 0.66) currentModeIndex = 1;
-        else currentModeIndex = 2;
-
-        updateMenuUI();
+        highScoreEl.innerText = localStorage.getItem(`fj_alltime_${m.name}`) || 0;
     }
 
     class Ball {
@@ -416,242 +379,232 @@
             this.velocity = 0;
         }
         draw() {
-            ctx.fillStyle = "#ffffff";
-            ctx.strokeStyle = "#000000";
-            ctx.lineWidth = 2.5;
-
-            // Render Two Action Wings
+            ctx.fillStyle = "#ffffff"; ctx.strokeStyle = "#000000"; ctx.lineWidth = 2.5;
+            // Wings
             ctx.beginPath();
-            if (this.velocity < 0) {
-                ctx.ellipse(this.x - 16, this.y - 5, 12, 6, -Math.PI/6, 0, Math.PI * 2);
-            } else {
-                ctx.ellipse(this.x - 16, this.y + 2, 12, 6, Math.PI/6, 0, Math.PI * 2);
-            }
+            let wingY = (this.velocity < 0) ? -5 : 2;
+            let angle = (this.velocity < 0) ? -Math.PI/6 : Math.PI/6;
+            ctx.ellipse(this.x - 16, this.y + wingY, 12, 6, angle, 0, Math.PI * 2);
+            ctx.ellipse(this.x + 16, this.y + wingY, 12, 6, -angle, 0, Math.PI * 2);
             ctx.fill(); ctx.stroke();
 
-            ctx.beginPath();
-            if (this.velocity < 0) {
-                ctx.ellipse(this.x + 16, this.y - 5, 12, 6, Math.PI/6, 0, Math.PI * 2);
-            } else {
-                ctx.ellipse(this.x + 16, this.y + 2, 12, 6, -Math.PI/6, 0, Math.PI * 2);
-            }
-            ctx.fill(); ctx.stroke();
-
-            // Basketball Body Texture
-            ctx.fillStyle = "#e67e22";
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-            ctx.fill(); ctx.stroke();
-            
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.radius, -Math.PI/4, Math.PI * 0.75);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(this.x - this.radius, this.y);
-            ctx.lineTo(this.x + this.radius, this.y);
-            ctx.stroke();
+            // Basketball Body
+            ctx.fillStyle = "#e67e22"; ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.lineWidth = 1.5; ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, -Math.PI/4, Math.PI * 0.75); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(this.x - this.radius, this.y); ctx.lineTo(this.x + this.radius, this.y); ctx.stroke();
         }
         update() {
-            this.velocity += 0.38;
-            this.y += this.velocity;
+            this.velocity += 0.38; this.y += this.velocity;
             if (this.y + this.radius > canvas.height || this.y - this.radius < 0) {
                 triggerCross(canvas.width / 2, canvas.height / 2);
             }
         }
-        flap() { this.velocity = -7.0; }
     }
 
     class Hoop {
         constructor() {
-            const config = modesConfig[currentModeIndex];
             this.x = canvas.width + 60;
-            this.y = Math.random() * (canvas.height * 0.45) + (canvas.height * 0.25);
-            this.width = 95;  // Mota wide space hole view
-            this.height = 20; // Thicker Ring Rim
-            this.speed = config.speed;
+            this.y = Math.random() * (canvas.height * 0.45) + (canvas.height * 0.22);
+            this.width = 95; this.height = 22; // Regular thick ring shape 
+            this.speed = modes[currentModeIndex].speed;
             this.passed = false;
-        }
-        drawNet() {
-            // Back layer of net mesh mesh string
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
-            ctx.lineWidth = 2.5;
-            ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
-            ctx.beginPath();
-            ctx.moveTo(this.x + 8, this.y + this.height/2);
-            ctx.lineTo(this.x + 22, this.y + 45);
-            ctx.lineTo(this.x + this.width - 22, this.y + 45);
-            ctx.lineTo(this.x + this.width - 8, this.y + this.height/2);
-            ctx.closePath();
-            ctx.fill(); ctx.stroke();
+            this.touchedRim = false;
+            this.hasShield = false;
         }
         drawRim() {
-            // Thicker 3D Real Hoop Construction with an inside empty visible opening space
-            ctx.lineWidth = 8;
-            ctx.strokeStyle = "#1a1a1a"; // Hard border frame
-            ctx.beginPath();
-            ctx.ellipse(this.x + this.width/2, this.y, this.width/2, this.height/2, 0, 0, Math.PI * 2);
-            ctx.stroke();
+            ctx.lineWidth = 7; ctx.strokeStyle = "#1a1a1a";
+            ctx.beginPath(); ctx.ellipse(this.x + this.width/2, this.y, this.width/2, this.height/2, 0, 0, Math.PI * 2); ctx.stroke();
 
-            // Real Deep Glossy Red Color Fill
-            let gradient = ctx.createLinearGradient(this.x, this.y - this.height/2, this.x, this.y + this.height/2);
-            gradient.addColorStop(0, "#ff5252");
-            gradient.addColorStop(1, "#b31b27");
-            
-            ctx.fillStyle = gradient;
-            ctx.beginPath();
-            ctx.ellipse(this.x + this.width/2, this.y, this.width/2, this.height/2, 0, 0, Math.PI * 2);
-            ctx.fill();
+            let grad = ctx.createLinearGradient(this.x, this.y - this.height/2, this.x, this.y + this.height/2);
+            grad.addColorStop(0, "#ff5252"); grad.addColorStop(1, "#b31b27");
+            ctx.fillStyle = grad; ctx.beginPath();
+            ctx.ellipse(this.x + this.width/2, this.y, this.width/2, this.height/2, 0, 0, Math.PI * 2); ctx.fill();
 
-            // Specular shiny white point curve track line
-            ctx.lineWidth = 2.5;
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.75)";
-            ctx.beginPath();
-            ctx.ellipse(this.x + this.width/2, this.y - 3, this.width/2.3, this.height/4, 0, Math.PI, Math.PI * 2);
-            ctx.stroke();
+            // Specular shiny glow line
+            ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+            ctx.beginPath(); ctx.ellipse(this.x + this.width/2, this.y - 3, this.width/2.2, this.height/4, 0, Math.PI, Math.PI * 2); ctx.stroke();
+
+            // Render Protection Shield if configured active
+            if (this.hasShield) {
+                ctx.save();
+                ctx.lineWidth = 4; ctx.strokeStyle = "rgba(0, 255, 240, 0.8)";
+                ctx.shadowBlur = 10; ctx.shadowColor = "#00fff0";
+                ctx.beginPath();
+                // Lower curved protection shield plate design
+                ctx.arc(this.x + this.width/2, this.y + 6, this.width/2 + 5, 0, Math.PI);
+                ctx.stroke();
+                ctx.restore();
+            }
         }
     }
 
-    function drawCrossMark(x, y) {
-        ctx.save();
-        ctx.lineWidth = 16;
-        ctx.strokeStyle = "rgba(75, 65, 65, 0.9)";
-        ctx.lineCap = "round";
-        let size = 42;
-        ctx.beginPath();
-        ctx.moveTo(x - size, y - size); ctx.lineTo(x + size, y + size);
-        ctx.moveTo(x + size, y - size); ctx.lineTo(x - size, y + size);
-        ctx.stroke();
-        ctx.restore();
+    function createGlowTrail(x, y) {
+        // Emit sparkling golden trails tracking behind the traveling rim
+        for(let i=0; i<2; i++) {
+            particles.push({
+                x: x, y: y + (Math.random() * 10 - 5),
+                size: Math.random() * 6 + 3,
+                alpha: 1, speedX: -(Math.random() * 1.5 + 0.5)
+            });
+        }
     }
 
     function launchGame() {
-        menuOverlay.style.display = 'none';
-        screenOverlay.style.display = 'none';
-        gameHUD.style.display = 'flex';
+        initAudio();
+        menuOverlay.style.display = 'none'; screenOverlay.style.display = 'none';
+        gameHUD.style.display = 'flex'; audioControls.style.display = 'flex';
         
-        const config = modesConfig[currentModeIndex];
-        hudModeName.innerText = `${config.name} MODE`;
+        showCross = false; swishStreak = 0;
+        ball = new Ball(); hoops = [new Hoop()]; particles = [];
+        score = 0; scoreEl.innerText = score;
         
-        showCross = false;
-        ball = new Ball();
-        hoops = [new Hoop()];
-        score = 0;
-        scoreEl.innerText = score;
-        
-        let sc = getScoresForMode(config.name);
-        highScoreEl.innerText = sc.alltime;
-
+        document.getElementById('hudModeName').innerText = modes[currentModeIndex].name;
         gameRunning = true;
         if(gameLoopId) cancelAnimationFrame(gameLoopId);
         gameLoop();
     }
 
-    function exitToMenu() {
-        screenOverlay.style.display = 'none';
-        gameHUD.style.display = 'none';
-        menuOverlay.style.display = 'flex';
-        updateMenuUI();
-    }
-
     function triggerCross(x, y) {
-        gameRunning = false;
-        showCross = true;
-        crossX = x;
-        crossY = y;
+        gameRunning = false; showCross = true; crossX = x; crossY = y;
+        playBeep(180, 'sawtooth', 0.4);
 
-        // Draw cross display layout over current viewport instantly
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#d1c9b0";
-        ctx.beginPath(); ctx.moveTo(0, canvas.height); ctx.lineTo(canvas.width * 0.5, canvas.height * 0.75); ctx.lineTo(canvas.width, canvas.height); ctx.fill();
-        hoops.forEach(h => { h.drawNet(); h.drawRim(); });
+        ctx.fillStyle = "#d1c9b0"; ctx.beginPath(); ctx.moveTo(0, canvas.height); ctx.lineTo(canvas.width * 0.5, canvas.height * 0.75); ctx.lineTo(canvas.width, canvas.height); ctx.fill();
+        hoops.forEach(h => h.drawRim());
         ball.draw();
-        drawCrossMark(crossX, crossY);
 
-        setTimeout(showLeaderboardCard, 1000);
+        // Cross Display Animation Mark
+        ctx.lineWidth = 15; ctx.strokeStyle = "rgba(75, 65, 65, 0.9)"; ctx.lineCap = "round";
+        ctx.beginPath(); ctx.moveTo(x - 40, y - 40); ctx.lineTo(x + 40, y + 40); ctx.moveTo(x + 40, y - 40); ctx.lineTo(x - 40, y + 40); ctx.stroke();
+
+        setTimeout(showGameOverCard, 1000);
     }
 
-    function showLeaderboardCard() {
+    function showGameOverCard() {
         cancelAnimationFrame(gameLoopId);
         finalScoreEl.innerText = score;
-        const currentModeName = modesConfig[currentModeIndex].name;
-        leaderboardTitle.innerText = `${currentModeName} MODE`;
+        const modeName = modes[currentModeIndex].name;
+        document.getElementById('leaderboardTitle').innerText = `${modeName} MODE`;
 
-        let sc = getScoresForMode(currentModeName);
+        let today = localStorage.getItem(`fj_today_${modeName}`) || 0;
+        let week = localStorage.getItem(`fj_week_${modeName}`) || 0;
+        let alltime = localStorage.getItem(`fj_alltime_${modeName}`) || 0;
 
-        if (score > sc.today) { sc.today = score; localStorage.setItem(`fd_today_${currentModeName}`, score); }
-        if (score > sc.week) { sc.week = score; localStorage.setItem(`fd_week_${currentModeName}`, score); }
-        if (score > sc.alltime) { sc.alltime = score; localStorage.setItem(`fd_alltime_${currentModeName}`, score); }
+        if(score > today) { today = score; localStorage.setItem(`fj_today_${modeName}`, score); }
+        if(score > week) { week = score; localStorage.setItem(`fj_week_${modeName}`, score); }
+        if(score > alltime) { alltime = score; localStorage.setItem(`fj_alltime_${modeName}`, score); }
 
-        todayBestEl.innerText = sc.today;
-        weekBestEl.innerText = sc.week;
-        allTimeBestEl.innerText = sc.alltime;
-        highScoreEl.innerText = sc.alltime;
+        document.getElementById('todayBestVal').innerText = today;
+        document.getElementById('weekBestVal').innerText = week;
+        document.getElementById('allTimeBestVal').innerText = alltime;
 
         screenOverlay.style.display = 'flex';
+    }
+
+    function exitToMenu() {
+        screenOverlay.style.display = 'none'; gameHUD.style.display = 'none'; audioControls.style.display = 'none';
+        menuOverlay.style.display = 'flex'; updateMenuUI();
+    }
+
+    function triggerSplash(txt) {
+        const sp = document.getElementById('bonusSplash');
+        sp.innerText = txt; sp.style.display = 'block';
+        sp.style.left = (canvas.width / 2 - 70) + 'px'; sp.style.top = (canvas.height * 0.35) + 'px';
+        setTimeout(() => { sp.style.display = 'none'; }, 900);
     }
 
     function gameLoop() {
         if (!gameRunning) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Ground hill style artwork
-        ctx.fillStyle = "#d1c9b0";
-        ctx.beginPath(); ctx.moveTo(0, canvas.height); ctx.lineTo(canvas.width * 0.5, canvas.height * 0.75); ctx.lineTo(canvas.width, canvas.height); ctx.fill();
+        // Ground Mesh
+        ctx.fillStyle = "#d1c9b0"; ctx.beginPath(); ctx.moveTo(0, canvas.height); ctx.lineTo(canvas.width * 0.5, canvas.height * 0.75); ctx.lineTo(canvas.width, canvas.height); ctx.fill();
 
-        const config = modesConfig[currentModeIndex];
-        if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - config.gap) {
-            hoops.push(new Hoop());
+        if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - modes[currentModeIndex].gap) {
+            let nH = new Hoop();
+            // Inject Shield automatically on specific tier checklist scores
+            if([12, 24, 34, 56, 89].includes(score)) nH.hasShield = true;
+            hoops.push(nH);
         }
 
-        // Draw back net structures
-        for (let i = 0; i < hoops.length; i++) hoops[i].drawNet();
+        // Handle Trails particles pipeline loops
+        for (let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i]; p.x += p.speedX; p.alpha -= 0.02;
+            if(p.alpha <= 0) { particles.splice(i, 1); continue; }
+            ctx.fillStyle = `rgba(255, 215, 0, ${p.alpha})`;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+        }
 
         for (let i = hoops.length - 1; i >= 0; i--) {
-            let h = hoops[i];
-            h.x -= h.speed;
+            let h = hoops[i]; h.x -= h.speed;
+            
+            // Continuous sparkling glow calculation trail
+            createGlowTrail(h.x + h.width, h.y);
+            createGlowTrail(h.x, h.y);
+
             h.drawRim();
 
-            let insideLeft = h.x + 8;
-            let insideRight = h.x + h.width - 8;
+            let rLeft = h.x + 6; let rRight = h.x + h.width - 6;
 
-            // STRICT CRITICAL TRIPPERS - Out handling if colliding from beneath/edges
-            if (!h.passed && ball.x > insideLeft && ball.x < insideRight) {
-                // Ball hitting rim boundaries upward direction action
-                if (ball.y > h.y && ball.velocity < 0 && Math.abs(ball.y - h.y) < ball.radius + 6) {
+            // Shield Break Logic check
+            if (h.hasShield) {
+                let distToCenter = Math.hypot(ball.x - (h.x + h.width/2), ball.y - h.y);
+                if (distToCenter < ball.radius + h.width/2) {
+                    h.hasShield = false; // Save ball from immediate death once
+                    ball.velocity = -5; // Bounce up
+                    playBeep(600, 'triangle', 0.25);
+                    continue;
+                }
+            }
+
+            // Collide testing with edge sides boundary limits
+            let dLeft = Math.hypot(ball.x - h.x, ball.y - h.y);
+            let dRight = Math.hypot(ball.x - (h.x + h.width), ball.y - h.y);
+            if(dLeft < ball.radius + 3 || dRight < ball.radius + 3) {
+                h.touchedRim = true;
+            }
+
+            // Down side approach strict failure check
+            if (!h.passed && ball.x > rLeft && ball.x < rRight) {
+                if (ball.y > h.y && ball.velocity < 0 && Math.abs(ball.y - h.y) < ball.radius + 5) {
                     triggerCross(h.x + h.width/2, h.y); return;
                 }
             }
 
-            // Absolute inside entry cross scoring validation tracking
-            if (!h.passed && ball.x > insideLeft && ball.x < insideRight) {
+            // Passing cross update scoring action validation
+            if (!h.passed && ball.x > rLeft && ball.x < rRight) {
                 if (ball.y >= h.y && (ball.y - ball.velocity) < h.y) {
                     h.passed = true;
-                    score += 1;
+                    if (!h.touchedRim) {
+                        swishStreak++;
+                        let mult = swishStreak + 1;
+                        score += mult;
+                        triggerSplash(mult === 2 ? `2X SWISH!` : `${mult}X MULTI!`);
+                        playBeep(880, 'sine', 0.15);
+                    } else {
+                        swishStreak = 0; score += 1;
+                        playBeep(520, 'sine', 0.1);
+                    }
                     scoreEl.innerText = score;
                 }
             }
 
-            // Missed loop boundary verification check
-            if (!h.passed && ball.x > insideRight + 12) { 
-                triggerCross(h.x + h.width/2, h.y); return; 
-            }
-
+            // Missed loop logic check
+            if (!h.passed && ball.x > rRight + 10) { triggerCross(h.x + h.width/2, h.y); return; }
             if (h.x + h.width < 0) hoops.splice(i, 1);
         }
 
-        ball.update();
-        ball.draw();
+        ball.update(); ball.draw();
         gameLoopId = requestAnimationFrame(gameLoop);
     }
 
-    // Interactive Trigger Setup listeners
-    window.addEventListener('keydown', (e) => { if (e.code === 'Space' && gameRunning) ball.flap(); });
-    canvas.addEventListener('touchstart', (e) => { if (gameRunning) { ball.flap(); e.preventDefault(); } }, { passive: false });
-    canvas.addEventListener('mousedown', () => { if (gameRunning) ball.flap(); });
+    window.addEventListener('keydown', (e) => { if(e.code === 'Space' && gameRunning) { ball.flap(); playBeep(330, 'sine', 0.05); } });
+    canvas.addEventListener('touchstart', (e) => { if(gameRunning) { ball.flap(); playBeep(330, 'sine', 0.05); e.preventDefault(); } }, {passive:false});
+    canvas.addEventListener('mousedown', () => { if(gameRunning) { ball.flap(); playBeep(330, 'sine', 0.05); } });
     window.addEventListener('resize', resizeCanvas);
 
-    // Initial setup configurations trigger call
     updateMenuUI();
 </script>
 </body>
