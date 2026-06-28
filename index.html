@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flappy Jump Professional</title>
+    <title>Flappy Jump Professional with Loader</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -35,7 +35,59 @@
             z-index: 1;
         }
 
-        /* Top HUD Panel - Audio buttons embedded seamlessly inside here */
+        /* NEW LOADING SCREEN OVERLAY */
+        #loadingOverlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, #2c3e50, #1a252f);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
+            transition: opacity 0.5s ease-out;
+        }
+        .loader-title {
+            color: #ffffff;
+            font-size: 36px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            margin-bottom: 5px;
+        }
+        .loader-subtitle {
+            color: #3498db;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 40px;
+            font-weight: bold;
+        }
+        .loader-bar-bg {
+            width: 75%;
+            height: 14px;
+            background-color: #34495e;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
+            border: 2px solid #fff;
+        }
+        .loader-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, #2ecc71, #27ae60);
+            border-radius: 8px;
+            transition: width 0.1s linear;
+        }
+        .loader-text {
+            color: #b2bec3;
+            font-size: 14px;
+            margin-top: 12px;
+            font-weight: bold;
+        }
+
+        /* Top HUD Panel */
         .top-bar {
             position: absolute;
             top: 20px;
@@ -96,6 +148,7 @@
             justify-content: space-between;
             z-index: 40;
             padding: 60px 20px;
+            display: none; /* Initially hidden until loader completes */
         }
         .menu-header h1 { color: white; font-size: 38px; text-shadow: 0 4px 6px rgba(0,0,0,0.25); text-align: center; }
         .menu-header p { color: #fff1e0; font-size: 13px; margin-top: 6px; text-align: center; opacity: 0.9; }
@@ -213,6 +266,15 @@
 <body>
 
 <div id="gameContainer">
+    <div id="loadingOverlay">
+        <div class="loader-title">FLAPPY JUMP</div>
+        <div class="loader-subtitle">Loading Assets...</div>
+        <div class="loader-bar-bg">
+            <div id="loaderBarFill" class="loader-bar-fill"></div>
+        </div>
+        <div id="loaderText" class="loader-text">0%</div>
+    </div>
+
     <div id="gameHUD" class="top-bar">
         <div class="score-box">
             <div id="hudModeName" class="label">EASY</div>
@@ -298,6 +360,11 @@
     const avatarMouth = document.getElementById('avatarMouth');
     const playBtn = document.getElementById('playBtn');
 
+    // Loading Elements
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const loaderBarFill = document.getElementById('loaderBarFill');
+    const loaderText = document.getElementById('loaderText');
+
     let currentModeIndex = 0; 
     const modes = [
         { name: "EASY", color: "#2ecc71", fill: "0%", speed: 3.2, gap: 240, box: "#27ae60" },
@@ -309,6 +376,32 @@
     let sfxEnabled = true;
     let audioCtx = null;
     let bgmNode = null;
+
+    // RUN LOADER AUTOMATICALLY ON PAGE LOAD
+    window.addEventListener('DOMContentLoaded', () => {
+        runLoadingScreen();
+    });
+
+    function runLoadingScreen() {
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += Math.floor(Math.random() * 5) + 2; // Random fast Increments
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(interval);
+                setTimeout(() => {
+                    loadingOverlay.style.opacity = 0;
+                    setTimeout(() => {
+                        loadingOverlay.style.display = 'none';
+                        menuOverlay.style.display = 'flex'; // Reveal main menu smoothly
+                        updateMenuUI();
+                    }, 500);
+                }, 400);
+            }
+            loaderBarFill.style.width = progress + '%';
+            loaderText.innerText = progress + '%';
+        }, 60);
+    }
 
     function initAudio() { 
         if (!audioCtx) {
@@ -356,7 +449,6 @@
         source.loop = true;
 
         let gainNode = audioCtx.createGain();
-        // Boosted base volume from 0.08 to 0.25
         gainNode.gain.setValueAtTime((musicEnabled && gameRunning) ? 0.25 : 0, audioCtx.currentTime);
         
         source.connect(gainNode);
@@ -378,7 +470,6 @@
             let osc = audioCtx.createOscillator();
             let gain = audioCtx.createGain();
             osc.type = type; osc.frequency.value = freq;
-            // Boosted SFX volume from 0.12 to 0.35
             gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
             osc.connect(gain); gain.connect(audioCtx.destination);
@@ -531,7 +622,6 @@
             let osc = audioCtx.createOscillator();
             let gain = audioCtx.createGain();
             osc.type = 'sawtooth'; osc.frequency.value = 180;
-            // Boosted crash SFX volume to 0.35
             gain.gain.setValueAtTime(sfxEnabled ? 0.35 : 0, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
             osc.connect(gain); gain.connect(audioCtx.destination);
@@ -653,12 +743,12 @@
     window.addEventListener('keydown', (e) => { if(e.code === 'Space' && gameRunning) ball.flap(); });
     
     document.getElementById('gameContainer').addEventListener('mousedown', (e) => {
-        if (e.target.closest('#menuOverlay') || e.target.closest('#screenOverlay') || e.target.closest('.hud-audio-cluster')) return;
+        if (e.target.closest('#menuOverlay') || e.target.closest('#screenOverlay') || e.target.closest('.hud-audio-cluster') || e.target.closest('#loadingOverlay')) return;
         if (gameRunning) ball.flap();
     });
 
     document.getElementById('gameContainer').addEventListener('touchstart', (e) => {
-        if (e.target.closest('#menuOverlay') || e.target.closest('#screenOverlay') || e.target.closest('.hud-audio-cluster')) return;
+        if (e.target.closest('#menuOverlay') || e.target.closest('#screenOverlay') || e.target.closest('.hud-audio-cluster') || e.target.closest('#loadingOverlay')) return;
         if (gameRunning) {
             ball.flap();
             e.preventDefault();
@@ -666,7 +756,6 @@
     }, { passive: false });
 
     window.addEventListener('resize', resizeCanvas);
-    updateMenuUI();
 </script>
 </body>
 </html>
