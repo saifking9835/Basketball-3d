@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flappy Dunk Clone</title>
+    <title>Flappy Dunk Pro</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -54,7 +54,7 @@
             color: white;
             z-index: 20;
         }
-        #screenOverlay h1 { font-size: 28px; margin-bottom: 15px; }
+        #screenOverlay h1 { font-size: 28px; margin-bottom: 15px; text-align: center; }
         #screenOverlay button {
             background-color: #ff4757;
             color: white;
@@ -64,6 +64,17 @@
             font-weight: bold;
             border-radius: 25px;
             cursor: pointer;
+        }
+        /* Perfect Swish Pop-up text style */
+        #bonusText {
+            position: absolute;
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 24px;
+            display: none;
+            text-shadow: 2px 2px 4px #000;
+            z-index: 15;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -80,6 +91,7 @@
             <div id="highScore" class="val">0</div>
         </div>
     </div>
+    <div id="bonusText">2X PERFECT!</div>
     <canvas id="gameCanvas"></canvas>
     <div id="screenOverlay">
         <h1 id="screenTitle">FLAPPY BASKETBALL</h1>
@@ -95,6 +107,7 @@
     const overlay = document.getElementById('screenOverlay');
     const screenTitle = document.getElementById('screenTitle');
     const actionBtn = document.getElementById('actionBtn');
+    const bonusText = document.getElementById('bonusText');
 
     function resizeCanvas() {
         canvas.width = canvas.parentElement.clientWidth;
@@ -104,8 +117,8 @@
 
     let ball, hoops, score, gameRunning, gameLoopId;
     let highScore = localStorage.getItem('flappy_highScore') || 0;
-    const gravity = 0.4;
-    const jumpForce = -7.5;
+    const gravity = 0.38;
+    const jumpForce = -7.2;
 
     highScoreEl.innerText = highScore;
 
@@ -113,23 +126,33 @@
         constructor() {
             this.x = canvas.width * 0.25;
             this.y = canvas.height / 2;
-            this.radius = 15;
+            this.radius = 14;
             this.velocity = 0;
         }
         draw() {
-            // Wings
             ctx.fillStyle = "#ffffff";
             ctx.strokeStyle = "#000000";
             ctx.lineWidth = 2;
+
+            // Left Wing
             ctx.beginPath();
             if (this.velocity < 0) {
-                ctx.ellipse(this.x - 18, this.y - 5, 12, 6, -Math.PI/6, 0, Math.PI * 2);
+                ctx.ellipse(this.x - 16, this.y - 4, 11, 6, -Math.PI/6, 0, Math.PI * 2);
             } else {
-                ctx.ellipse(this.x - 18, this.y, 12, 6, Math.PI/6, 0, Math.PI * 2);
+                ctx.ellipse(this.x - 16, this.y, 11, 6, Math.PI/6, 0, Math.PI * 2);
             }
             ctx.fill(); ctx.stroke();
 
-            // Ball
+            // Right Wing
+            ctx.beginPath();
+            if (this.velocity < 0) {
+                ctx.ellipse(this.x + 16, this.y - 4, 11, 6, Math.PI/6, 0, Math.PI * 2);
+            } else {
+                ctx.ellipse(this.x + 16, this.y, 11, 6, -Math.PI/6, 0, Math.PI * 2);
+            }
+            ctx.fill(); ctx.stroke();
+
+            // Basketball Body
             ctx.fillStyle = "#e67e22";
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
@@ -138,6 +161,10 @@
             // Lines
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.radius, -Math.PI/4, Math.PI * 0.75);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(this.x - this.radius, this.y);
+            ctx.lineTo(this.x + this.radius, this.y);
             ctx.stroke();
         }
         update() {
@@ -152,21 +179,29 @@
 
     class Hoop {
         constructor() {
-            this.x = canvas.width + 50;
-            this.y = Math.random() * (canvas.height * 0.5) + (canvas.height * 0.25);
-            this.width = 70;
-            this.height = 10;
-            this.speed = 2.5;
+            this.x = canvas.width + 60;
+            this.y = Math.random() * (canvas.height * 0.45) + (canvas.height * 0.25);
+            this.width = 90; // Ring ka size bada kar diya (70 se 90)
+            this.height = 14;
+            this.speed = 2.4;
             this.passed = false;
+            this.touchedRim = false; 
         }
         draw() {
-            ctx.lineWidth = 5;
+            ctx.lineWidth = 6;
             ctx.strokeStyle = "#ff4757";
             ctx.beginPath();
             ctx.ellipse(this.x + this.width/2, this.y, this.width/2, this.height/2, 0, 0, Math.PI * 2);
             ctx.stroke();
         }
         update() { this.x -= this.speed; }
+    }
+
+    function showBonusEffect(x, y) {
+        bonusText.style.left = x + 'px';
+        bonusText.style.top = (y - 40) + 'px';
+        bonusText.style.display = 'block';
+        setTimeout(() => { bonusText.style.display = 'none'; }, 800);
     }
 
     function startGame() {
@@ -192,7 +227,7 @@
         if (!gameRunning) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Background deco
+        // Simple Background Design
         ctx.fillStyle = "#d1c9b0";
         ctx.beginPath();
         ctx.moveTo(0, canvas.height);
@@ -200,19 +235,55 @@
         ctx.lineTo(canvas.width, canvas.height);
         ctx.fill();
 
-        if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - 220) {
+        if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - 240) {
             hoops.push(new Hoop());
         }
 
         for (let i = hoops.length - 1; i >= 0; i--) {
-            hoops[i].update();
-            hoops[i].draw();
+            let h = hoops[i];
+            h.update();
+            h.draw();
 
-            // Check Score / Collision
-            if (!hoops[i].passed && ball.x > hoops[i].x && ball.x < hoops[i].x + hoops[i].width) {
-                if (Math.abs(ball.y - hoops[i].y) < 15) {
-                    hoops[i].passed = true;
-                    score++;
+            // Left rim aur Right rim ki horizontal positions
+            let leftRimX = h.x;
+            let rightRimX = h.x + h.width;
+
+            // 1. RIM TOUCH DETECTION (Dono kinaro par touch check)
+            let distToLeftRim = Math.hypot(ball.x - leftRimX, ball.y - h.y);
+            let distToRightRim = Math.hypot(ball.x - rightRimX, ball.y - h.y);
+            
+            if (distToLeftRim < ball.radius + 3 || distToRightRim < ball.radius + 3) {
+                h.touchedRim = true;
+            }
+
+            // 2. WRONG ENTRY DETECTION (Niche se ring cross karne par OUT)
+            if (!h.passed && ball.x > leftRimX && ball.x < rightRimX) {
+                // Agar ball niche se upar aa rahi hai aur ring ko touch/cross karti hai
+                if (ball.y > h.y && ball.velocity < 0 && Math.abs(ball.y - h.y) < ball.radius + 5) {
+                    gameOver();
+                    return;
+                }
+            }
+
+            // 3. SUCCESSFUL TOP-TO-BOTTOM DUNK DETECTION
+            if (!h.passed && ball.x > leftRimX && ball.x < rightRimX) {
+                // Ball upar se niche ja rahi hai aur ring center line cross kar rahi hai
+                if (ball.y >= h.y && (ball.y - ball.velocity) < h.y) {
+                    h.passed = true;
+                    
+                    // Bich ka center point check (Swish logic)
+                    let hoopCenter = h.x + h.width / 2;
+                    let distanceFromCenter = Math.abs(ball.x - hoopCenter);
+
+                    if (!h.touchedRim && distanceFromCenter < 12) {
+                        // 2X Multiply Points (Perfect Swish)
+                        score += 2;
+                        showBonusEffect(ball.x, ball.y);
+                    } else {
+                        // Normal 1 Point (Touch hoke nikli ya center se door thi)
+                        score += 1;
+                    }
+
                     scoreEl.innerText = score;
                     if (score > highScore) {
                         highScore = score;
@@ -222,12 +293,14 @@
                 }
             }
 
-            // Missed Hoop check
-            if (!hoops[i].passed && ball.x > hoops[i].x + hoops[i].width + 5) {
+            // Missed Hoop check (Bina andar gaye aage nikal gaya toh Out)
+            if (!h.passed && ball.x > rightRimX + 10) {
                 gameOver();
+                return;
             }
 
-            if (hoops[i].x + hoops[i].width < 0) {
+            // Remove old hoops
+            if (h.x + h.width < 0) {
                 hoops.splice(i, 1);
             }
         }
