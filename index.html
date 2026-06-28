@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flappy Jump - Professional Master</title>
+    <title>Flappy Jump Professional</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -35,7 +35,7 @@
             z-index: 1;
         }
 
-        /* Top HUD Panel */
+        /* Top HUD Panel - Audio buttons embedded seamlessly inside here */
         .top-bar {
             position: absolute;
             top: 20px;
@@ -43,47 +43,41 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 20px;
-            z-index: 10;
+            padding: 0 15px;
+            z-index: 50;
             display: none;
-            pointer-events: none;
         }
         .score-box {
             background-color: #2b1d16;
             color: white;
-            padding: 6px 14px;
+            padding: 6px 12px;
             border-radius: 10px;
             text-align: center;
-            min-width: 100px;
+            min-width: 85px;
             pointer-events: auto;
         }
         .score-box .label { font-size: 9px; color: #aaa; font-weight: bold; text-transform: uppercase; }
-        .score-box .val { font-size: 20px; font-weight: bold; }
+        .score-box .val { font-size: 18px; font-weight: bold; }
         
-        /* Master Audio Toggles */
-        .audio-cluster {
-            position: absolute;
-            top: 25px;
-            left: 50%;
-            transform: translateX(-50%);
+        /* Compact Audio Grid inside HUD */
+        .hud-audio-cluster {
             display: flex;
-            gap: 12px;
-            z-index: 50;
+            gap: 8px;
+            pointer-events: auto;
         }
         .audio-btn {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             background-color: #2b1d16;
             border: 2px solid #5a4033;
             border-radius: 50%;
             color: white;
-            font-size: 16px;
+            font-size: 14px;
             cursor: pointer;
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 4px 0 #110906;
-            pointer-events: auto;
+            box-shadow: 0 3px 0 #110906;
         }
         .audio-btn:active { transform: scale(0.95); }
         .audio-btn.muted {
@@ -91,7 +85,7 @@
             border-color: #e74c3c;
         }
         
-        /* MAIN CONFIG MENU OVERLAY */
+        /* MAIN MENU OVERLAY - Cleaned from all audio triggers */
         #menuOverlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -101,10 +95,10 @@
             align-items: center;
             justify-content: space-between;
             z-index: 40;
-            padding: 50px 20px;
+            padding: 60px 20px;
         }
-        .menu-header h1 { color: white; font-size: 36px; text-shadow: 0 4px 6px rgba(0,0,0,0.25); text-align: center; }
-        .menu-header p { color: #fff1e0; font-size: 14px; margin-top: 6px; text-align: center; }
+        .menu-header h1 { color: white; font-size: 38px; text-shadow: 0 4px 6px rgba(0,0,0,0.25); text-align: center; }
+        .menu-header p { color: #fff1e0; font-size: 13px; margin-top: 6px; text-align: center; opacity: 0.9; }
         
         .mode-panel {
             background-color: #fff9f2;
@@ -140,7 +134,6 @@
         
         .mode-title-text { font-size: 38px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
         
-        /* Functional Stepper Control */
         .slider-wrapper {
             width: 90%;
             position: relative;
@@ -160,7 +153,7 @@
             height: 100%;
             border-radius: 12px;
             width: 0%;
-            transition: width 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease;
+            transition: width 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .slider-thumb {
             position: absolute;
@@ -172,7 +165,7 @@
             background: white;
             border: 5px solid #2ecc71;
             transform: translateX(-50%);
-            transition: left 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.2s ease;
+            transition: left 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         
         .main-play-btn {
@@ -180,13 +173,13 @@
             font-size: 26px; font-weight: bold; color: white; cursor: pointer;
             text-transform: uppercase; transition: transform 0.1s;
         }
-        .main-play-btn:active { transform: translateY(3px); box-shadow: none !important; }
+        .main-play-btn:active { transform: translateY(3px); }
 
-        /* GAME OVER SCREEN OVERLAY */
+        /* GAME OVER OVERLAY */
         #screenOverlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(40, 30, 40, 0.65);
+            background: rgba(40, 30, 40, 0.7);
             display: none; flex-direction: column;
             justify-content: center; align-items: center; z-index: 45; padding: 20px;
         }
@@ -220,15 +213,21 @@
 <body>
 
 <div id="gameContainer">
-    <div class="audio-cluster">
-        <button id="musicBtn" class="audio-btn" onclick="toggleMusic(event)">🎵</button>
-        <button id="sfxBtn" class="audio-btn" onclick="toggleSFX(event)">🔊</button>
-    </div>
-
     <div id="gameHUD" class="top-bar">
-        <div class="score-box"><div id="hudModeName" class="label">EASY</div><div id="currentScore" class="val">0</div></div>
-        <div></div> 
-        <div class="score-box"><div class="label">ALL TIME</div><div id="highScore" class="val">0</div></div>
+        <div class="score-box">
+            <div id="hudModeName" class="label">EASY</div>
+            <div id="currentScore" class="val">0</div>
+        </div>
+        
+        <div class="hud-audio-cluster">
+            <button id="musicBtn" class="audio-btn" onclick="toggleMusic(event)">🎵</button>
+            <button id="sfxBtn" class="audio-btn" onclick="toggleSFX(event)">🔊</button>
+        </div>
+        
+        <div class="score-box">
+            <div class="label">ALL TIME</div>
+            <div id="highScore" class="val">0</div>
+        </div>
     </div>
 
     <div id="bonusSplash">2X SWISH!</div>
@@ -300,7 +299,6 @@
     const playBtn = document.getElementById('playBtn');
 
     let currentModeIndex = 0; 
-    // HARDER GAMEPLAY BALANCING: Speed aur gaps ko tight kar diya hai level high karne ke liye
     const modes = [
         { name: "EASY", color: "#2ecc71", fill: "0%", speed: 3.2, gap: 240, box: "#27ae60" },
         { name: "MEDIUM", color: "#f1c40f", fill: "50%", speed: 4.2, gap: 200, box: "#d4ac0d" },
@@ -315,8 +313,8 @@
     function initAudio() { 
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            startSmoothBGM();
         }
+        startSmoothBGM();
     }
 
     function toggleMusic(e) {
@@ -324,22 +322,24 @@
         musicEnabled = !musicEnabled;
         document.getElementById('musicBtn').classList.toggle('muted', !musicEnabled);
         if(bgmNode) {
-            bgmNode.gain.value = musicEnabled ? 0.08 : 0;
+            bgmNode.gain.value = (musicEnabled && gameRunning) ? 0.08 : 0;
         } else if(musicEnabled && gameRunning) {
             initAudio();
         }
-        playBeep(450, 'sine', 0.05);
+        if(gameRunning) playBeep(450, 'sine', 0.05);
     }
 
     function toggleSFX(e) {
         if(e) e.stopPropagation();
         sfxEnabled = !sfxEnabled;
         document.getElementById('sfxBtn').classList.toggle('muted', !sfxEnabled);
-        if(sfxEnabled) playBeep(550, 'sine', 0.05);
+        if(sfxEnabled && gameRunning) playBeep(550, 'sine', 0.05);
     }
 
     function startSmoothBGM() {
+        if(bgmNode) return; 
         if(!musicEnabled) return;
+
         let bufferSize = audioCtx.sampleRate * 4; 
         let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
         let data = buffer.getChannelData(0);
@@ -356,7 +356,7 @@
         source.loop = true;
 
         let gainNode = audioCtx.createGain();
-        gainNode.gain.setValueAtTime(musicEnabled ? 0.08 : 0, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime((musicEnabled && gameRunning) ? 0.08 : 0, audioCtx.currentTime);
         
         source.connect(gainNode);
         gainNode.connect(audioCtx.destination);
@@ -364,8 +364,14 @@
         bgmNode = gainNode;
     }
 
+    function stopBGM() {
+        if (bgmNode) {
+            bgmNode.gain.setValueAtTime(0, audioCtx.currentTime);
+        }
+    }
+
     function playBeep(freq, type, duration) {
-        if (!sfxEnabled) return;
+        if (!sfxEnabled || !gameRunning) return;
         try {
             if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             let osc = audioCtx.createOscillator();
@@ -399,7 +405,6 @@
         else currentModeIndex = 2;
         
         updateMenuUI();
-        playBeep(400, 'sine', 0.08);
     }
 
     function updateMenuUI() {
@@ -450,7 +455,7 @@
             ctx.beginPath(); ctx.moveTo(this.x - this.radius, this.y); ctx.lineTo(this.x + this.radius, this.y); ctx.stroke();
         }
         update() {
-            this.velocity += 0.45; // Increased physics gravity for high challenge 
+            this.velocity += 0.45; 
             this.y += this.velocity;
             if (this.y + this.radius > canvas.height || this.y - this.radius < 0) {
                 triggerCross(canvas.width / 2, canvas.height / 2);
@@ -472,7 +477,6 @@
             this.touchedRim = false;
         }
         drawRim() {
-            // Premium Cyan/Blue Gradient Rings Custom Draw Implementation
             ctx.lineWidth = 7; ctx.strokeStyle = "#002b47";
             ctx.beginPath(); ctx.ellipse(this.x + this.width/2, this.y, this.width/2, this.height/2, 0, 0, Math.PI * 2); ctx.stroke();
 
@@ -486,7 +490,6 @@
         }
     }
 
-    // Golden Trails Generator Engine
     function createGoldenTrail(x, y) {
         for(let i=0; i<3; i++) {
             particles.push({
@@ -501,7 +504,6 @@
     }
 
     function launchGame() {
-        initAudio();
         menuOverlay.style.display = 'none'; screenOverlay.style.display = 'none';
         gameHUD.style.display = 'flex';
         
@@ -511,13 +513,29 @@
         
         document.getElementById('hudModeName').innerText = modes[currentModeIndex].name;
         gameRunning = true;
+
+        // Audio executes smoothly strictly when game is active now
+        initAudio(); 
+        if(bgmNode && musicEnabled) bgmNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+
         if(gameLoopId) cancelAnimationFrame(gameLoopId);
         gameLoop();
     }
 
     function triggerCross(x, y) {
         gameRunning = false; showCross = true; crossX = x; crossY = y;
-        playBeep(180, 'sawtooth', 0.4);
+        
+        // Mute sound assets instantly upon failure loop
+        stopBGM();
+        try {
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.type = 'sawtooth'; osc.frequency.value = 180;
+            gain.gain.setValueAtTime(sfxEnabled ? 0.12 : 0, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+        } catch(e){}
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "#d1c9b0"; ctx.beginPath(); ctx.moveTo(0, canvas.height); ctx.lineTo(canvas.width * 0.5, canvas.height * 0.75); ctx.lineTo(canvas.width, canvas.height); ctx.fill();
@@ -552,6 +570,7 @@
     }
 
     function exitToMenu() {
+        stopBGM();
         screenOverlay.style.display = 'none'; gameHUD.style.display = 'none';
         menuOverlay.style.display = 'flex'; updateMenuUI();
     }
@@ -573,14 +592,13 @@
             hoops.push(new Hoop());
         }
 
-        // Render Shiny Golden Trails on Screen
         for (let i = particles.length - 1; i >= 0; i--) {
             let p = particles[i]; p.x += p.speedX; p.y += p.speedY; p.alpha -= 0.03;
             if(p.alpha <= 0) { particles.splice(i, 1); continue; }
-            ctx.fillStyle = `rgba(255, 215, 0, ${p.alpha})`; // Real Golden Color Code Mapping
+            ctx.fillStyle = `rgba(255, 215, 0, ${p.alpha})`; 
             ctx.shadowBlur = 6; ctx.shadowColor = "#ffd700";
             ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
-            ctx.shadowBlur = 0; // Reset canvas context state
+            ctx.shadowBlur = 0; 
         }
 
         for (let i = hoops.length - 1; i >= 0; i--) {
@@ -605,7 +623,6 @@
             if (!h.passed && ball.x > rLeft && ball.x < rRight) {
                 if (ball.y >= h.y && (ball.y - ball.velocity) < h.y) {
                     h.passed = true;
-                    // Trigger Golden Trails around the Ring on Successful Dunk!
                     for(let k = 0; k < 15; k++) {
                         createGoldenTrail(h.x + (Math.random() * h.width), h.y);
                     }
@@ -635,12 +652,12 @@
     window.addEventListener('keydown', (e) => { if(e.code === 'Space' && gameRunning) ball.flap(); });
     
     document.getElementById('gameContainer').addEventListener('mousedown', (e) => {
-        if (e.target.closest('#menuOverlay') || e.target.closest('#screenOverlay') || e.target.closest('.audio-cluster')) return;
+        if (e.target.closest('#menuOverlay') || e.target.closest('#screenOverlay') || e.target.closest('.hud-audio-cluster')) return;
         if (gameRunning) ball.flap();
     });
 
     document.getElementById('gameContainer').addEventListener('touchstart', (e) => {
-        if (e.target.closest('#menuOverlay') || e.target.closest('#screenOverlay') || e.target.closest('.audio-cluster')) return;
+        if (e.target.closest('#menuOverlay') || e.target.closest('#screenOverlay') || e.target.closest('.hud-audio-cluster')) return;
         if (gameRunning) {
             ball.flap();
             e.preventDefault();
